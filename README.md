@@ -131,7 +131,7 @@ Backend – Render.com
 
 Demo Instructions
 
-1. Visit the live demo → https://alpha-ai-trader.pages.dev
+1. Visit the live demo → alpha-ai-trader.zh05698.workers.dev
 2. Add a trade – click "Add Trade", enter symbol (BTCUSD, ETHUSD) and price details.
 3. Ask the coach – type questions in the chat panel, e.g. “Should I buy BTC?” or “Analyze my recent trades”.
 4. Monitor your performance – the dashboard updates in real time, showing P&L, win rate, risk score, and bias alerts.
