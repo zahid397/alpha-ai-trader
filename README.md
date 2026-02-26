@@ -1,161 +1,185 @@
-🤖 Alpha AI Trader
-
+```markdown
 <div align="center">
-
-AI‑Powered Trading Coach for Psychology & Performance
-
-https://img.shields.io/badge/demo-live-brightgreen?style=for-the-badge&logo=vercel
-https://img.shields.io/badge/api-available-blue?style=for-the-badge&logo=render
-https://img.shields.io/github/license/zahid397/alpha-ai-trader?style=for-the-badge
-https://img.shields.io/badge/PRs-welcome-brightgreen?style=for-the-badge
-
+  <h1>🚀 Alpha AI Trader</h1>
+  <p><strong>AI-Powered Trading Coach for Psychology & Performance</strong></p>
+  
+  <!-- Badges -->
+  <p>
+    <a href="https://alpha-ai-trader.zh05698.workers.dev/">
+      <img src="https://img.shields.io/badge/demo-live-brightgreen?style=for-the-badge&logo=vercel" alt="Demo Live">
+    </a>
+    <a href="https://deriv-ai-trade-coach.onrender.com/health">
+      <img src="https://img.shields.io/badge/api-available-blue?style=for-the-badge&logo=render" alt="API Available">
+    </a>
+    <a href="https://github.com/zahid397/alpha-ai-trader/blob/main/LICENSE">
+      <img src="https://img.shields.io/github/license/zahid397/alpha-ai-trader?style=for-the-badge" alt="License">
+    </a>
+    <img src="https://img.shields.io/badge/version-1.0.0-purple?style=for-the-badge" alt="Version">
+  </p>
+  
+  <!-- Links -->
+  <p>
+    <a href="#overview">Overview</a> •
+    <a href="#features">Features</a> •
+    <a href="#live-demo">Live Demo</a> •
+    <a href="#architecture">Architecture</a> •
+    <a href="#team">Team</a>
+  </p>
 </div>
 
 ---
 
-📖 About The Project
+## 📋 Overview
 
-Alpha AI Trader is a full‑stack application that combines real‑time market data with behavioral psychology to coach traders. It detects cognitive biases—such as loss aversion, overconfidence, and revenge trading—and delivers personalized advice to improve trading discipline. Built for the AI Trading Hackathon Challenge, it demonstrates how AI can transform emotional decision‑making into consistent performance.
+Alpha AI Trader is a full‑stack application that combines **real‑time market data** with **behavioral psychology** to coach traders. It detects cognitive biases—such as loss aversion, overconfidence, and revenge trading—and delivers personalized advice to improve trading discipline. Built for the **AI Trading Hackathon Challenge**, it demonstrates how AI can transform emotional decision‑making into consistent performance.
 
-🔗 Live Demo: alpha-ai-trader.zh05698.workers.dev
-🔗 Backend API: deriv-ai-trade-coach.onrender.com
-
----
-
-✨ Features
-
-🧠 AI Coaching Engine
-
-· Real‑time analysis of your trading activity
-· Buy/sell signals based on market conditions (RSI, MACD, volatility)
-· Personalized coaching messages in natural language
-
-🎯 Bias Detection
-
-· Loss Aversion – identifies reluctance to cut losses
-· Overconfidence – flags excessive risk after winning streaks
-· Revenge Trading – detects emotionally driven trades after losses
-· Confirmation Bias – spots one‑sided analysis
-· Anchoring – warns about fixation on entry prices
-
-📊 Performance Dashboard
-
-· Live P&L, win rate, and portfolio value
-· Interactive charts for cumulative profit/loss
-· Risk meter and volatility alerts
-
-🔌 Flexible AI Integration
-
-· Uses Groq API (Llama, Mixtral) for intelligent responses
-· Graceful fallback to mock AI when no API key is provided – perfect for testing and demos
+> **Why Alpha AI Trader?**  
+> Most traders fail because of emotions, not strategy. Our AI coach analyzes your trades, identifies psychological patterns, and gives actionable feedback—helping you become a more disciplined, profitable trader.
 
 ---
 
-🛠️ Tech Stack
+## ✨ Features
 
-Frontend Backend AI / ML Deployment
-HTML5, CSS3, Vanilla JS Node.js, Express.js Groq SDK Cloudflare Workers (frontend)
-Custom CSS variables REST API Prompt Engineering Render (backend)
-Canvas for charts Rate limiting Bias detection algorithms 
+### 🧠 AI Coaching Engine
+- **Real‑time trade analysis** – Get instant feedback on every trade.
+- **Buy/sell signals** – Based on market conditions (RSI, MACD, volatility).
+- **Personalized recommendations** – Tailored advice to improve your strategy.
 
----
+### 🧬 Psychological Bias Detection
+- **Loss Aversion** – Identifies when you hold losers too long.
+- **Overconfidence** – Detects increased risk‑taking after wins.
+- **Revenge Trading** – Flags impulsive trades after losses.
+- **Confirmation Bias** – Spots one‑sided analysis.
+- **Anchoring** – Recognizes fixation on price levels.
 
-🚀 Getting Started
+### 📊 Advanced Analytics
+- **Performance dashboard** – Win rate, profit factor, drawdown, and more.
+- **Trade history** – Categorized by symbol, duration, and outcome.
+- **Heatmaps** – Visualize your best trading times and symbols.
+- **Pattern recognition** – Learn from your winning and losing streaks.
 
-Prerequisites
-
-· Node.js 18+ and npm
-· (Optional) Groq API key for live AI mode
-
-Installation
-
-1. Clone the repository
-   ```bash
-   git clone https://github.com/zahid397/alpha-ai-trader.git
-   cd alpha-ai-trader
-   ```
-2. Install backend dependencies
-   ```bash
-   cd backend
-   npm install
-   ```
-3. Set up environment variables
-   ```bash
-   cp .env.example .env
-   # Edit .env – add your GROQ_API_KEY if you have one
-   ```
-4. Run the backend locally
-   ```bash
-   npm run dev
-   # Backend will be available at http://localhost:3000
-   ```
-5. Serve the frontend
-   · Open public/index.html in your browser, or
-   · Use a local server (e.g., npx serve public)
+### 🌐 Live Market Data
+- **Real‑time BTC/USD & ETH/USD** – Price, RSI, volume, sentiment.
+- **Volatility alerts** – Get notified of potential breakout opportunities.
+- **Support/resistance levels** – Key technical levels displayed.
 
 ---
 
-🧪 Usage
+## 🚀 Live Demo
 
-1. Add your trades – manually enter trades via the dashboard or use the provided sample data.
-2. Talk to the AI Coach – ask questions like “Analyze my recent trades” or “What’s the market outlook?”
-3. Review bias alerts – the system continuously scans your trading behavior and flags psychological pitfalls.
-4. Monitor performance – watch your win rate, profit factor, and risk score evolve over time.
+Experience Alpha AI Trader right now:
 
-https://via.placeholder.com/800x450?text=Dashboard+Screenshot+Placeholder
+| Frontend | Backend API |
+|----------|-------------|
+| [**alpha-ai-trader.zh05698.workers.dev**](https://alpha-ai-trader.zh05698.workers.dev/) | [**deriv-ai-trade-coach.onrender.com**](https://deriv-ai-trade-coach.onrender.com/health) |
+
+The backend is hosted on **Render** (free tier) and may take a few seconds to wake up after inactivity. The frontend runs on **Cloudflare Workers** for lightning‑fast global access.
+
+---
+
+## 🏗️ Architecture
+
+Alpha AI Trader follows a modern, serverless‑friendly architecture:
+
+```
+
+┌─────────────────┐      ┌──────────────────┐      ┌─────────────────┐
+│   Cloudflare    │  →   │   Express API    │  →   │   Groq AI       │
+│   Worker        │      │   (Render)       │      │   (Llama/Mixtral)│
+│   (Frontend)    │      │   /api/*         │      │                 │
+└─────────────────┘      └──────────────────┘      └─────────────────┘
+↓                         ↓                           ↓
+Static HTML/CSS/JS         Trade data &          Market analysis
+served via Worker          session storage       & coaching advice
+
+```
+
+**Tech Stack:**
+- **Frontend:** Vanilla JavaScript, CSS3 (Flexbox/Grid), HTML5
+- **Backend:** Node.js, Express.js, rate‑limiting, CORS, Helmet
+- **AI:** Groq SDK (Llama3, Mixtral) with automatic fallback to mock AI
+- **Data Storage:** JSON files (easily swappable with MongoDB/PostgreSQL)
+- **Deployment:** Cloudflare Workers (frontend) + Render (backend)
+
+---
+
+## 🎯 How It Works
+
+1. **Add your trades** – Manually enter or import from CSV/JSON.
+2. **AI analyzes** – Every trade is evaluated for strengths, mistakes, and psychological biases.
+3. **Get coaching** – Ask questions, request market outlook, or receive bias alerts.
+4. **Track progress** – Watch your win rate, profit factor, and other metrics improve over time.
+
+---
+
+## 📸 Screenshots
+
+*(Placeholder – actual screenshots would be inserted here)*
+
+| Dashboard Overview | AI Coach Chat |
+|--------------------|---------------|
+| ![Dashboard](https://via.placeholder.com/400x250/0f172a/ffffff?text=Dashboard) | ![Chat](https://via.placeholder.com/400x250/1e293b/ffffff?text=AI+Chat) |
+
+| Trade Analysis | Market Data |
+|----------------|-------------|
+| ![Analysis](https://via.placeholder.com/400x250/334155/ffffff?text=Trade+Analysis) | ![Market](https://via.placeholder.com/400x250/0c4a6e/ffffff?text=Market+Data) |
+
+---
+
+## 🧪 Local Development
+
+Want to run Alpha AI Trader locally? Follow these steps:
+
+### Prerequisites
+- Node.js 18+ and npm
+- (Optional) Groq API key from [console.groq.com](https://console.groq.com)
+
+### Backend Setup
+```bash
+git clone https://github.com/zahid397/alpha-ai-trader.git
+cd alpha-ai-trader/backend
+npm install
+cp .env.example .env
+# Add your GROQ_API_KEY if desired
+npm run dev
+```
+
+Frontend Setup
+
+The frontend is served as static files. You can open public/index.html directly or serve it with a simple HTTP server:
+
+```bash
+cd ../public
+npx serve
+```
+
+The backend will be available at http://localhost:3000 and the frontend at http://localhost:5000 (or similar).
 
 ---
 
 📡 API Reference
 
-All API endpoints are prefixed with /api. The backend is hosted at https://deriv-ai-trade-coach.onrender.com.
+All API endpoints are prefixed with /api.
 
 Method Endpoint Description
-GET /trades Get all trades
+GET /trades Retrieve all trades
 POST /trades Add a new trade
-GET /trades/stats Get performance statistics
-POST /coach/analyze/:tradeId Analyze a specific trade
-POST /coach/advice Get coaching advice based on market context
-GET /coach/biases Detect psychological biases from trade history
-GET /history Full historical data with charts and patterns
+GET /trades/stats/summary Get performance statistics
+POST /coach/advice Get AI coaching advice
+GET /coach/biases Detect psychological biases
+GET /history Full trading history with analytics
+GET /session/:id Get or create coaching session
 
-📘 Full API documentation is available here.
-
----
-
-🌐 Deployment
-
-Frontend (Cloudflare Workers)
-
-The frontend is deployed as a static site on Cloudflare Workers.
-To deploy your own:
-
-```bash
-cd public
-npx wrangler pages publish . --project-name=alpha-ai-trader
-```
-
-Backend (Render)
-
-The backend is deployed on Render’s free tier.
-To deploy:
-
-1. Push your code to a GitHub repository.
-2. Create a new Web Service on Render.
-3. Connect the repo, set build command to cd backend && npm install, start command to cd backend && node app.js.
-4. Add environment variables (GROQ_API_KEY, etc.) in the Render dashboard.
+Full API documentation is available via the /api endpoint of the live backend.
 
 ---
 
-🤝 Contributing
+👤 Team
 
-Contributions are what make the open‑source community such an amazing place to learn, inspire, and create. Any contributions you make are greatly appreciated.
+Role Name Links
+Sole Developer & Designer Zahid Hasan GitHub · LinkedIn
 
-1. Fork the Project
-2. Create your Feature Branch (git checkout -b feature/AmazingFeature)
-3. Commit your Changes (git commit -m 'Add some AmazingFeature')
-4. Push to the Branch (git push origin feature/AmazingFeature)
-5. Open a Pull Request
+Built with ❤️ for the AI Trading Hackathon Challenge.
 
 ---
 
@@ -165,20 +189,24 @@ Distributed under the MIT License. See LICENSE for more information.
 
 ---
 
-📬 Contact
+🙏 Acknowledgments
 
-Zahid – @zh05698 – zahid@example.com
-
-Project Link: https://github.com/zahid397/alpha-ai-trader
-
----
-
-⚠️ Disclaimer
-
-Alpha AI Trader is an educational tool. It does not constitute financial advice. Trading involves risk; never invest more than you can afford to lose. Always consult a qualified financial advisor.
+· Groq for lightning‑fast AI inference
+· Render for reliable backend hosting
+· Cloudflare Workers for edge static serving
+· The open‑source community for countless inspiration and tools
 
 ---
 
 <div align="center">
-  Made with ❤️ by a solo developer for the AI Trading Hackathon
+  <p>
+    <a href="https://alpha-ai-trader.zh05698.workers.dev/">🌐 Live Demo</a> •
+    <a href="https://github.com/zahid397/alpha-ai-trader">📦 GitHub</a> •
+    <a href="https://github.com/zahid397/alpha-ai-trader/issues">🐛 Issues</a>
+  </p>
+  <p>⭐ Star us on GitHub – it really helps! ⭐</p>
+  <p><em>“The goal of a successful trader is to make the best trades. Money is secondary.” – Alexander Elder</em></p>
+  <br/>
+  <img src="https://img.shields.io/badge/made%20with-❤️%20and%20JavaScript-orange" alt="Made with love and JavaScript">
 </div>
+```
