@@ -153,6 +153,7 @@ body {
 /* Main Content */
 .main-content {
     flex: 1;
+    min-width: 0; /* let wide tables scroll instead of stretching the page */
     margin-left: var(--sidebar-width);
     padding: 24px;
     min-height: 100vh;
@@ -461,6 +462,25 @@ body {
 .message-text {
     line-height: 1.5;
     margin-bottom: 8px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.message-content.user-content {
+    margin-left: auto;
+    max-width: 80%;
+}
+
+.message-source {
+    color: var(--text-muted);
+    font-weight: 400;
+    font-size: 12px;
+}
+
+.coach-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
 .message-time {
@@ -647,13 +667,54 @@ body {
 }
 
 @media (max-width: 768px) {
+    /* Sidebar becomes a bottom tab bar so navigation stays reachable */
     .sidebar {
+        top: auto;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        height: auto;
+        padding: 8px 12px;
+        flex-direction: row;
+        border-right: none;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .logo,
+    .status-card,
+    .nav-divider {
         display: none;
+    }
+
+    .nav-menu {
+        flex-direction: row;
+        justify-content: space-around;
+        gap: 4px;
+    }
+
+    .nav-item,
+    .nav-item.active {
+        flex: 1;
+        flex-direction: column;
+        justify-content: center;
+        gap: 2px;
+        padding: 8px;
+        border-left: none;
+    }
+
+    .nav-item span {
+        display: inline;
+        font-size: 12px;
+    }
+
+    .nav-item.active {
+        border-top: 2px solid var(--neon-cyan);
     }
     
     .main-content {
         margin-left: 0;
-        padding: 16px;
+        padding: 16px 16px 88px;
     }
     
     .header {
@@ -683,4 +744,137 @@ body {
 /* Utility Classes */
 .hidden {
     display: none !important;
+}
+
+/* Values */
+.value-positive {
+    color: var(--positive);
+}
+
+.value-negative {
+    color: var(--negative);
+}
+
+.empty-row {
+    text-align: center;
+    padding: 40px !important;
+    color: var(--text-muted);
+}
+
+.empty-row i {
+    font-size: 24px;
+    margin-bottom: 12px;
+    display: block;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+}
+
+/* Behavioral Insights */
+.insights-summary {
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+}
+
+.insights-list {
+    list-style: none;
+    display: grid;
+    gap: 12px;
+}
+
+.insight-item {
+    background: var(--bg-glass);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 16px;
+}
+
+.insight-header {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.insight-confidence {
+    margin-left: auto;
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.insight-evidence {
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+.insight-action {
+    font-size: 14px;
+}
+
+.insight-action i {
+    color: var(--warning);
+    margin-right: 6px;
+}
+
+.severity-badge {
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.severity-high {
+    background: rgba(239, 68, 68, 0.2);
+    color: var(--negative);
+}
+
+.severity-medium {
+    background: rgba(245, 158, 11, 0.2);
+    color: var(--warning);
+}
+
+.severity-low {
+    background: rgba(0, 243, 255, 0.12);
+    color: var(--neon-cyan);
+}
+
+/* Toast */
+.toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: calc(100vw - 40px);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    padding: 12px 20px;
+    border-radius: var(--border-radius);
+    border-left: 4px solid var(--neon-cyan);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    z-index: 9999;
+    font-size: 14px;
+    animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s forwards;
+}
+
+@keyframes slideIn {
+    from { transform: translateX(120%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
 }
