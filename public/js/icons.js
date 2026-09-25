@@ -35,6 +35,7 @@ const PATHS = {
   database: '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/>',
   wifiOff: '<path d="M2 2l20 20"/><path d="M8.5 16.5a5 5 0 0 1 7 0"/><path d="M5 12.9a10 10 0 0 1 5.2-2.8M19 12.9a10 10 0 0 0-2.5-1.8"/><path d="M12 20h.01"/>',
   search: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
+  game: '<path d="M6 9h4M8 7v4"/><path d="M15 10h.01M18 12h.01"/><path d="M17.3 5H6.7A4.7 4.7 0 0 0 2 9.7V15a3 3 0 0 0 5.4 1.8L9 15h6l1.6 1.8A3 3 0 0 0 22 15V9.7A4.7 4.7 0 0 0 17.3 5z"/>',
   broom: '<path d="M19 3l-7.5 7.5"/><path d="M11 11l-6 2 1 5 5 1 2-6z"/><path d="M6.5 18.5L4 21"/>'
 };
 

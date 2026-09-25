@@ -17,7 +17,11 @@ const TYPES = {
   '.json': 'application/json; charset=utf-8',
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
+  '.webp': 'image/webp',
+  '.jpg': 'image/jpeg',
   '.ico': 'image/x-icon',
+  '.wasm': 'application/wasm',
+  '.dat': 'application/octet-stream',
   '.txt': 'text/plain; charset=utf-8'
 };
 
@@ -28,9 +32,18 @@ async function serveStatic(pathname, res, method) {
   } catch {
     return false;
   }
-  const file = resolve(PUBLIC_DIR, `.${rel}`);
+  let file = resolve(PUBLIC_DIR, `.${rel}`);
   if (!file.startsWith(PUBLIC_DIR + sep)) return false; // path traversal guard
   try {
+    if ((await stat(file)).isDirectory()) {
+      // Serve folder index pages (e.g. /game/) like Cloudflare and Vercel do.
+      if (!pathname.endsWith('/')) {
+        res.writeHead(308, { Location: `${pathname}/` });
+        res.end();
+        return true;
+      }
+      file = resolve(file, 'index.html');
+    }
     if (!(await stat(file)).isFile()) return false;
   } catch {
     return false;

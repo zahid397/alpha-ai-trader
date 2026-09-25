@@ -23,11 +23,22 @@ jobs:
       - name: Validate Worker bundle
         run: npm run check
 
+  # The C# game engine: unit tests + bot soak test. The compiled WebAssembly
+  # in public/game/engine is committed, so deploys never need .NET.
+  game-engine:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet test game/CrimsonArena.slnx --logger "console;verbosity=normal"
+
   # Deploys main to Cloudflare Workers. Needs two repository secrets:
   # CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID (see README). Without them
   # this job only prints a notice, so CI stays green.
   deploy:
-    needs: test
+    needs: [test, game-engine]
     if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     concurrency: production

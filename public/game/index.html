@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0710">
+  <meta name="description" content="Crimson Arena: a fast browser action game. Movement, combat and enemy AI run in a C# engine compiled to WebAssembly.">
+  <title>Crimson Arena</title>
+  <script>
+    // Relative URLs below need the trailing slash (/game -> /game/).
+    if (!/\/$|\.html$/.test(location.pathname)) location.replace(location.pathname + '/' + location.search + location.hash);
+  </script>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%23b3203a'/%3E%3Cpath d='M6 18L17 7M14 6l4 0 0 4M8 13l3 3M5 19l2-2' fill='none' stroke='white' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="game.css">
+  <link rel="modulepreload" href="js/main.js">
+</head>
+<body data-mode="loading">
+  <main class="shell">
+    <div class="stage-wrap" id="stage-wrap">
+      <canvas id="stage" aria-label="Crimson Arena game view"></canvas>
+
+      <!-- HUD -->
+      <div class="hud" id="hud" hidden>
+        <div class="hud-top">
+          <div class="vitals">
+            <div class="meter meter-hp">
+              <span class="meter-label">HP</span>
+              <div class="meter-track"><div class="meter-ghost" id="hp-ghost"></div><div class="meter-fill" id="hp-fill"></div></div>
+              <span class="meter-num" id="hp-num">120</span>
+            </div>
+            <div class="meter meter-st">
+              <span class="meter-label">ST</span>
+              <div class="meter-track"><div class="meter-fill" id="st-fill"></div></div>
+            </div>
+            <div class="meter meter-rage">
+              <span class="meter-label">RG</span>
+              <div class="meter-track"><div class="meter-fill" id="rage-fill"></div><i class="meter-mark"></i></div>
+              <span class="rage-ready" id="rage-ready">Special ready</span>
+            </div>
+          </div>
+          <div class="wave-info">
+            <strong id="hud-wave">Wave 1</strong>
+            <span><span id="hud-left">0 foes left</span><span class="mood" id="hud-mood" data-mood="balanced">AI balanced</span></span>
+          </div>
+          <div class="score-info">
+            <strong id="hud-score">0</strong>
+            <span><b id="hud-mult">×1.00</b> · best <span id="hud-best">0</span></span>
+          </div>
+        </div>
+
+        <div class="combo" id="combo" aria-live="off">
+          <b id="combo-n">0</b><span>hits</span>
+          <div class="combo-track"><i id="combo-bar"></i></div>
+        </div>
+
+        <div class="boss" id="boss" hidden>
+          <span>The Dread Knight</span>
+          <div class="boss-track"><div id="boss-fill"></div></div>
+        </div>
+
+        <div class="tools">
+          <button class="tool" id="btn-vision" aria-pressed="false" title="AI vision: see what every enemy is thinking (V)">
+            <svg viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><span>AI vision</span>
+          </button>
+          <button class="tool icon" id="btn-mute" aria-pressed="false" title="Sound (M)">
+            <svg class="on-icon" viewBox="0 0 24 24"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>
+            <svg class="off-icon" viewBox="0 0 24 24"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M16 9l6 6M22 9l-6 6"/></svg>
+          </button>
+          <button class="tool icon" id="btn-fullscreen" title="Fullscreen">
+            <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+          </button>
+          <button class="tool icon" id="btn-pause" title="Pause (Esc)">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></svg>
+          </button>
+        </div>
+
+        <div class="engine-chip"><i></i>C# engine · .NET WebAssembly · 120 Hz sim · <span id="fps">60</span> fps</div>
+      </div>
+
+      <div class="banner" id="banner" aria-live="polite">
+        <h2 id="banner-title"></h2>
+        <p id="banner-sub"></p>
+      </div>
+
+      <!-- Screens -->
+      <section class="screen screen-loading" id="screen-loading">
+        <div class="loader">
+          <h1 class="logo small">Crimson <span>Arena</span></h1>
+          <div class="load-track"><div id="load-bar"></div></div>
+          <p id="load-label">Loading…</p>
+        </div>
+      </section>
+
+      <section class="screen screen-title" id="screen-title" hidden>
+        <div class="title-card">
+          <p class="eyebrow">Fun mode · Alpha AI Trader</p>
+          <h1 class="logo">Crimson <span>Arena</span></h1>
+          <p class="tagline">Hold the arena against dread knights, frost rogues and their master. Every enemy thinks with a C# utility-AI brain, and an AI Director learns how you fight.</p>
+          <div class="actions">
+            <button class="btn btn-play" id="btn-play">Play <kbd>Enter</kbd></button>
+            <button class="btn btn-ghost" id="btn-howto">How to play</button>
+          </div>
+          <div class="title-meta">
+            <span>Best <b id="title-best">0</b></span>
+            <span>Engine <b>C# → WebAssembly</b></span>
+            <span>No sign-up · runs offline</span>
+          </div>
+          <div class="controls" id="controls">
+            <div class="keys">
+              <div><span><kbd>A</kbd><kbd>D</kbd> / <kbd>←</kbd><kbd>→</kbd></span>Move (hold <kbd>Shift</kbd> to walk)</div>
+              <div><span><kbd>Space</kbd> / <kbd>W</kbd></span>Jump (hold for higher)</div>
+              <div><span><kbd>J</kbd></span>Attack, press again to combo</div>
+              <div><span><kbd>K</kbd></span>Heavy: breaks guard, costs stamina</div>
+              <div><span><kbd>L</kbd></span>Dash, invulnerable while dashing</div>
+              <div><span><kbd>U</kbd></span>Crescent special (half rage bar)</div>
+              <div><span><kbd>V</kbd> <kbd>M</kbd> <kbd>Esc</kbd></span>AI vision · mute · pause</div>
+            </div>
+            <ul class="tips">
+              <li><b>Red glow</b> means an enemy is winding up. <b>!</b> marks the heavy hits.</li>
+              <li>Dash <b>through</b> a swing at the last moment for a <b>Perfect dodge</b>: time slows and you gain rage.</li>
+              <li>Spike traps hurt everyone. Knock enemies onto them for a <b>trap kill</b> bonus.</li>
+              <li>Keep hitting to build the combo multiplier. Getting hit resets it.</li>
+              <li>Gamepads work too. On a phone, turn it sideways and use the on-screen buttons.</li>
+            </ul>
+          </div>
+        </div>
+        <a class="back" href="../">← Dashboard</a>
+      </section>
+
+      <section class="screen screen-pause" id="screen-pause" hidden>
+        <div class="card">
+          <h2>Paused</h2>
+          <div class="actions col">
+            <button class="btn btn-play" id="btn-resume">Resume</button>
+            <button class="btn btn-ghost" id="btn-restart">Restart</button>
+            <button class="btn btn-ghost" id="btn-quit">Quit to menu</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen screen-over" id="screen-over" hidden>
+        <div class="card over">
+          <p class="eyebrow">The arena claims another</p>
+          <h2>Defeated</h2>
+          <div class="new-best" id="new-best" hidden>New high score!</div>
+          <div class="final-score" id="over-score">0</div>
+          <dl class="stats">
+            <div><dt>Wave</dt><dd id="over-wave">1</dd></div>
+            <div><dt>Kills</dt><dd id="over-kills">0</dd></div>
+            <div><dt>Best combo</dt><dd id="over-combo">0</dd></div>
+            <div><dt>Survived</dt><dd id="over-time">0:00</dd></div>
+            <div><dt>Perfect</dt><dd id="over-perfect">0</dd></div>
+          </dl>
+          <p class="note" id="over-note"></p>
+          <div class="actions">
+            <button class="btn btn-play" id="btn-again">Fight again <kbd>Enter</kbd></button>
+            <button class="btn btn-ghost" id="btn-menu">Menu</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen screen-error" id="screen-error" hidden>
+        <div class="card">
+          <h2>The arena failed to load</h2>
+          <p class="note" id="error-message"></p>
+          <p class="note">Crimson Arena needs a browser with WebAssembly (any current Chrome, Edge, Firefox or Safari).</p>
+          <div class="actions">
+            <button class="btn btn-play" onclick="location.reload()">Try again</button>
+            <a class="btn btn-ghost" href="../">Back to dashboard</a>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Touch controls -->
+    <div class="touch" id="touch" aria-hidden="true">
+      <div class="pad">
+        <button data-btn="left" aria-label="Left"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+        <button data-btn="right" aria-label="Right"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
+      </div>
+      <div class="buttons">
+        <button data-btn="special" class="b-special">SPL</button>
+        <button data-btn="heavy" class="b-heavy">HVY</button>
+        <button data-btn="dash" class="b-dash">DASH</button>
+        <button data-btn="jump" class="b-jump">JUMP</button>
+        <button data-btn="attack" class="b-attack">ATK</button>
+      </div>
+    </div>
+    <p class="rotate-hint">Turn your phone sideways for the full arena</p>
+  </main>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

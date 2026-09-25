@@ -250,6 +250,20 @@ svg.icon {
   color: var(--accent);
 }
 
+.nav-badge {
+  margin-left: auto;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #e34948 0%, #9b1c3a 100%);
+}
+
+.nav-game:hover .nav-badge {
+  box-shadow: 0 0 0 3px rgba(227, 73, 72, 0.18);
+}
+
 .engine-card {
   margin-top: auto;
   padding: 14px;
@@ -1380,7 +1394,7 @@ dialog.modal::backdrop {
     inset: auto 0 0 0;
     z-index: 30;
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
     background: color-mix(in srgb, var(--surface) 92%, transparent);
     backdrop-filter: blur(12px);

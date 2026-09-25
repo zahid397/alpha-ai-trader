@@ -8,6 +8,7 @@
 
 - [Features](#-features)
 - [The Alpha Engine](#-the-alpha-engine-no-api-key)
+- [Crimson Arena (fun mode game)](#-crimson-arena-fun-mode-game)
 - [Tested results](#-tested-results)
 - [Deploy (free)](#-deploy-free)
 - [Local development](#-local-development)
@@ -25,6 +26,7 @@
 - **Trade journal:** add trades, search and filter, CSV import (most broker exports work) and CSV export.
 - **Beautiful, accessible UI:** light and dark themes, mobile layout, keyboard-navigable charts with tooltips, and a table view for every chart.
 - **Never breaks:** if the API is unreachable, or the host has no database, everything runs in the browser with the same engine and your trades are saved locally.
+- **Fun mode: Crimson Arena.** A browser action game at `/game/` whose movement, physics, combat and enemy AI run in a **C# engine compiled to WebAssembly**. No backend needed.
 
 ## 🧠 The Alpha Engine (no API key)
 
@@ -40,12 +42,42 @@ The coach is a custom, deterministic AI engine written in plain JavaScript (`pub
 
 **Optional LLM polish:** set `GROQ_API_KEY` (free tier at groq.com), or `WORKERS_AI_ENABLED=true` on Cloudflare. The engine's grounded answer is passed to the LLM as the source of truth. If the LLM fails or runs out of quota, the engine answers on its own.
 
+## 🎮 Crimson Arena (fun mode game)
+
+Open **`/game/`** (or the *Crimson Arena* link in the sidebar). It's a side-scrolling arena brawler built from the project's sprite art. You hold the arena against dread knights, frost rogues and the Dread Knight boss.
+
+**The game engine is C#.** `game/Engine` is a plain .NET class library holding the whole simulation. `game/Web` compiles it to **WebAssembly** with `[JSExport]`, so it runs in the browser. There is no server call and nothing to install. JavaScript only feeds it input and draws what it reports.
+
+| Part | What it does |
+| --- | --- |
+| **Movement & physics** (`World.cs`) | Fixed 120 Hz timestep, gravity, acceleration and friction. Coyote time, jump buffering, variable jump height, air dash |
+| **Combat** (`Attacks.cs`) | Frame data for every attack (windup → active → recovery), a combo chain and cancel windows. Also hit-stop, knockback, poise/stagger, i-frames and **Perfect dodge** slow-mo |
+| **Enemy AI** (`Ai/Brain.cs`) | A **utility AI**: each enemy scores approach / attack / retreat / strafe / evade / wait-turn from what it perceives. Enemies avoid armed spike traps and never lunge across one. **Attack tokens** stop a crowd from all swinging at once |
+| **AI Director** (`Ai/Director.cs`) | Adjusts difficulty on the fly. It scores each wave (health, damage taken, speed, accuracy) and tunes enemy reaction time, how many may attack at once, wave size and health drops. A struggling player gets mercy, a dominant one gets a ruthless arena |
+| **Waves & world** | Knights, rogues and a boss every 5th wave (enrages at half health and calls for help). Spike traps hurt everyone, and trap kills pay a bonus. Also a combo score multiplier and pickups |
+| **Deterministic** | Seeded RNG: the same seed and inputs replay the exact same game (tested) |
+
+**Controls:** `A`/`D` or arrows move (hold `Shift` to walk), `Space` jumps, `J` attacks, `K` heavy, `L` dash and `U` special. `V` toggles **AI vision**, which shows every enemy's current decision and who holds an attack token. `Esc` pauses and `M` mutes. Gamepads work, and phones get on-screen touch controls.
+
+**Juice:** parallax gothic backdrop, sprite animation matched to the attack frame data, particles, screen shake, damage numbers and hit flashes. It also has telegraph glows so attacks can be read, synthesized WebAudio sound effects, an adaptive music loop, and a high score saved locally. If a device renders slowly, the resolution drops automatically.
+
+**Rebuilding the engine** (only after changing `game/`; the compiled output in `public/game/engine/` is committed, so deploys never need .NET):
+
+```bash
+npm run game:test     # C# unit tests + a 120-run bot soak test (needs the .NET 10 SDK)
+npm run game:build    # dotnet publish -> public/game/engine/_framework
+```
+
+Sprites are cut from the source sheets in `game/art/source/` by `game/art/extract.py` (background removal, frame slicing, foot anchoring, WebP atlases).
+
 ## 📊 Tested results
 
-- **82 automated tests** (`npm test`): engine math, bias detection, NLU accuracy on 17 phrasings including typos, Monte Carlo determinism, CSV parsing, every API route, the Vercel entry point and prompt-injection protection.
+- **89 automated tests** (`npm test`): engine math, bias detection, NLU accuracy on 17 phrasings including typos, Monte Carlo determinism, CSV parsing, every API route, the Vercel entry point and prompt-injection protection.
 - **Big data:** the test suite analyses **5,000 trades** with no NaN anywhere. In the browser, the "Big data: 2,000 trades" demo is analysed in about 30 ms.
 - **Fast on the free tier:** on the server, a coach answer on the 160-trade demo takes about 3 ms of CPU (under 1 ms when cached) and about 7 ms at 1,000 trades, inside Cloudflare's free CPU budget. Dashboards are computed in the browser.
 - **Verified end to end** in Chromium: Cloudflare (`wrangler dev` + D1), the Node server (no database, so local mode), and static-only hosting (offline mode), in light and dark themes and at mobile width, with no console errors.
+- **Game engine:** 38 C# tests covering physics, combat, AI, traps, waves, the Director, determinism and the snapshot format, plus a soak test. In it, a bot plays **120 full runs (676k frames)** with every frame checked against the engine's invariants. The engine runs about **5,000× faster than real time** in .NET and about 400× in the browser's WebAssembly. `npm test` also boots the real WebAssembly build under Node and plays it.
+- **Game in the browser:** played end to end by an automated keyboard bot (wave 4 reached), with touch controls tested on phone viewports in both orientations. The engine loads in under a second.
 
 ## 🚀 Deploy (free)
 
@@ -87,7 +119,7 @@ npm install
 npm run dev           # Cloudflare runtime + local D1 at http://localhost:8787
 # or
 npm start             # plain Node server at http://localhost:3000
-npm test              # 82 tests
+npm test              # 89 tests (includes the game's WebAssembly engine)
 npm run check         # bundle the Worker exactly as `wrangler deploy` would
 ```
 
@@ -132,10 +164,17 @@ Everything is optional. On Cloudflare, set these in `wrangler.jsonc` → `vars` 
 │   ├── index.html
 │   ├── css/app.css         # design system (light + dark)
 │   ├── js/                 # app controller, SVG charts, data layer, icons
-│   └── engine/             # Alpha Engine, shared by browser and server
+│   ├── engine/             # Alpha Engine, shared by browser and server
+│   └── game/               # Crimson Arena: canvas client, sprites, compiled C# engine
+├── game/                   # C# game engine source
+│   ├── Engine/             # simulation: physics, combat, AI brain + director
+│   ├── Engine.Tests/       # xUnit tests + bot soak test
+│   ├── Web/                # WebAssembly host ([JSExport])
+│   └── art/                # source sprite sheets + extractor
 ├── src/                    # API (Hono): routes, storage (D1 / memory), optional LLMs
 ├── api/index.js            # Vercel function entry
 ├── scripts/serve.mjs       # plain Node server (npm start)
+├── scripts/build-game.mjs  # compiles the C# engine to WebAssembly
 ├── vercel.json             # Vercel config
 ├── wrangler.jsonc          # Cloudflare config
 └── test/                   # node:test suites

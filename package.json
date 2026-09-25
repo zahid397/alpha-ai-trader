@@ -10,7 +10,9 @@
     "dev:ai": "wrangler dev --var WORKERS_AI_ENABLED:true",
     "deploy": "wrangler deploy",
     "test": "node --test \"test/**/*.test.js\"",
-    "check": "wrangler deploy --dry-run --outdir .wrangler/dry-run"
+    "check": "wrangler deploy --dry-run --outdir .wrangler/dry-run",
+    "game:build": "node scripts/build-game.mjs",
+    "game:test": "dotnet test game/CrimsonArena.slnx"
   },
   "engines": {
     "node": ">=22"
