@@ -1,0 +1,47 @@
+// Cloudflare Workers config. Everything here fits the Workers Free plan:
+// Workers (100k requests/day), Static Assets (free, unlimited), D1 (5 GB),
+// Workers AI (10k neurons/day) and Workers Logs.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "alpha-ai-trader",
+  "main": "src/index.js",
+  "compatibility_date": "2026-09-01",
+
+  // The dashboard (public/) is served as static assets on the same origin as
+  // the API, so the frontend needs no API URL and there are no CORS issues.
+  "assets": {
+    "directory": "./public"
+  },
+
+  // Trades and chat sessions. No database_id needed: `wrangler deploy`
+  // creates the database automatically on first deploy, and the Worker
+  // creates its tables + seed data on first request.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "alpha-ai-trader-db"
+    }
+  ],
+
+  // Free AI fallback when no GROQ_API_KEY secret is set.
+  "ai": {
+    "binding": "AI"
+  },
+
+  "vars": {
+    "ENVIRONMENT": "production",
+    "GROQ_MODEL": "llama-3.3-70b-versatile",
+    "WORKERS_AI_MODEL": "@cf/meta/llama-3.1-8b-instruct",
+    "CORS_ORIGIN": "*",
+    "RATE_LIMIT_MAX": "30",
+    "RATE_LIMIT_WINDOW_MS": "60000"
+  },
+
+  // Secrets (set with `npx wrangler secret put <NAME>`, never commit them):
+  //   GROQ_API_KEY - optional, enables Groq as the primary AI provider
+  //   ADMIN_TOKEN  - optional, enables GET /api/session/admin/sessions
+
+  "observability": {
+    "enabled": true
+  }
+}

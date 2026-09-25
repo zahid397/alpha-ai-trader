@@ -1,0 +1,23 @@
+{
+  "name": "alpha-ai-trader",
+  "version": "2.0.0",
+  "private": true,
+  "description": "AI Trading Coach: behavioral-bias analysis and AI coaching, deployed on Cloudflare Workers (free tier)",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --local --var WORKERS_AI_ENABLED:false",
+    "dev:ai": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "node --test \"test/**/*.test.js\"",
+    "check": "wrangler deploy --dry-run --outdir .wrangler/dry-run"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "hono": "^4.13.9"
+  },
+  "devDependencies": {
+    "wrangler": "^4.138.0"
+  }
+}

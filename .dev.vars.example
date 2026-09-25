@@ -1,0 +1,11 @@
+# Local secrets for `npm run dev`. Copy to .dev.vars (git-ignored) and fill in.
+# Everything is optional: with nothing set, the coach uses its rule-based engine.
+
+# Groq API key (free tier at https://console.groq.com/keys)
+GROQ_API_KEY=
+
+# Bearer token for GET /api/session/admin/sessions
+ADMIN_TOKEN=
+
+# Show error details in API responses while developing
+ENVIRONMENT=development

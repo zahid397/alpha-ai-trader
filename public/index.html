@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Trading Coach | Dashboard</title>
+    <meta name="description" content="Behavioral trading analytics and AI coaching">
+    <!-- API location. Empty = same origin (the Cloudflare Worker serves both the
+         dashboard and /api). Set a full URL only if the API is hosted elsewhere. -->
+    <meta name="api-base" content="">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A4%96%3C/text%3E%3C/svg%3E">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -39,7 +44,7 @@
                     <span class="status-badge" id="status-badge">Checking...</span>
                 </div>
                 <div class="status-footer">
-                    <small>API: deriv-ai-trade-coach</small>
+                    <small id="status-detail">Connecting to API...</small>
                 </div>
             </div>
         </aside>
@@ -66,13 +71,12 @@
                 <div class="kpi-grid">
                     <div class="kpi-card glass">
                         <div class="kpi-header">
-                            <h3>Portfolio Value</h3>
+                            <h3>Net P/L</h3>
                             <i class="fas fa-wallet neon-cyan"></i>
                         </div>
-                        <div class="kpi-value" id="portfolio-value">$0</div>
-                        <div class="kpi-trend positive">
-                            <i class="fas fa-arrow-up"></i>
-                            <span>+2.4% today</span>
+                        <div class="kpi-value" id="net-pl">--</div>
+                        <div class="kpi-trend" id="net-pl-trend">
+                            <span>Loading...</span>
                         </div>
                     </div>
                     
@@ -81,10 +85,9 @@
                             <h3>Win Rate</h3>
                             <i class="fas fa-trophy neon-green"></i>
                         </div>
-                        <div class="kpi-value" id="win-rate">0%</div>
-                        <div class="kpi-trend positive">
-                            <i class="fas fa-arrow-up"></i>
-                            <span>+5.2% this week</span>
+                        <div class="kpi-value" id="win-rate">--</div>
+                        <div class="kpi-trend" id="win-rate-trend">
+                            <span>Loading...</span>
                         </div>
                     </div>
                     
@@ -93,9 +96,9 @@
                             <h3>Total Trades</h3>
                             <i class="fas fa-exchange-alt"></i>
                         </div>
-                        <div class="kpi-value" id="total-trades">0</div>
-                        <div class="kpi-trend">
-                            <span>Last 30 days</span>
+                        <div class="kpi-value" id="total-trades">--</div>
+                        <div class="kpi-trend" id="total-trades-trend">
+                            <span>Loading...</span>
                         </div>
                     </div>
                     
@@ -104,19 +107,27 @@
                             <h3>Risk Score</h3>
                             <i class="fas fa-shield-alt"></i>
                         </div>
-                        <div class="kpi-value" id="risk-score">0/100</div>
-                        <div class="kpi-trend negative">
-                            <i class="fas fa-arrow-down"></i>
-                            <span>Needs improvement</span>
+                        <div class="kpi-value" id="risk-score">--</div>
+                        <div class="kpi-trend" id="risk-trend">
+                            <span>Loading...</span>
                         </div>
                     </div>
+                </div>
+
+                <!-- Behavioral Insights -->
+                <div class="section-card glass">
+                    <div class="card-header">
+                        <h3><i class="fas fa-brain neon-cyan"></i> Behavioral Insights</h3>
+                    </div>
+                    <p class="insights-summary" id="insights-summary">Analyzing your trading behavior...</p>
+                    <ul class="insights-list" id="insights-list"></ul>
                 </div>
 
                 <!-- Recent Trades Table -->
                 <div class="section-card glass">
                     <div class="card-header">
                         <h3>Recent Trades</h3>
-                        <button class="btn-icon" id="refresh-trades">
+                        <button class="btn-icon" id="refresh-trades" title="Refresh trades" aria-label="Refresh trades">
                             <i class="fas fa-redo"></i>
                         </button>
                     </div>
@@ -131,12 +142,13 @@
                                     <th>P/L</th>
                                     <th>Date</th>
                                     <th>Status</th>
+                                    <th><span class="sr-only">Coach</span></th>
                                 </tr>
                             </thead>
                             <tbody id="trades-table-body">
                                 <!-- Data will be populated here -->
                                 <tr class="loading-row">
-                                    <td colspan="7">
+                                    <td colspan="8">
                                         <div class="loading-spinner"></div>
                                         <span>Loading trades...</span>
                                     </td>
@@ -153,8 +165,11 @@
                     <div class="section-card glass chat-container">
                         <div class="card-header">
                             <h3><i class="fas fa-robot neon-cyan"></i> AI Trading Coach</h3>
-                            <div class="coach-status">
-                                <span class="status-online" id="coach-status">Online</span>
+                            <div class="coach-actions">
+                                <span class="status-online" id="coach-status">Connecting...</span>
+                                <button class="btn-icon" id="clear-chat" title="Start a new conversation" aria-label="Start a new conversation">
+                                    <i class="fas fa-broom"></i>
+                                </button>
                             </div>
                         </div>
                         
@@ -188,7 +203,7 @@
                                     placeholder="Ask your trading question... (e.g., 'Analyze my recent trades', 'How can I improve my risk score?')" 
                                     rows="2"
                                 ></textarea>
-                                <button id="send-button" class="btn-primary">
+                                <button id="send-button" class="btn-primary" aria-label="Send message">
                                     <i class="fas fa-paper-plane"></i>
                                     Send
                                 </button>
