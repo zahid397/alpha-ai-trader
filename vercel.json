@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "npm install --omit=dev --no-audit --no-fund",
+  "outputDirectory": "public",
+  "rewrites": [
+    { "source": "/health", "destination": "/api?__path=__health" },
+    { "source": "/api/(.*)", "destination": "/api?__path=$1" }
+  ]
+}

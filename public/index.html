@@ -1,241 +1,275 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Trading Coach | Dashboard</title>
-    <meta name="description" content="Behavioral trading analytics and AI coaching">
-    <!-- API location. Empty = same origin (the Cloudflare Worker serves both the
-         dashboard and /api). Set a full URL only if the API is hosted elsewhere. -->
-    <meta name="api-base" content="">
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A4%96%3C/text%3E%3C/svg%3E">
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Alpha AI Trader</title>
+  <meta name="description" content="AI trading coach: behavioural bias detection, Monte Carlo forecasts and a built-in AI engine that needs no API key.">
+  <meta name="theme-color" content="#0d0d0d" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#f4f4f1" media="(prefers-color-scheme: light)">
+  <!-- API location. Empty = same origin (the Worker / Vercel function serves
+       both the dashboard and /api). Set a full URL only if the API is hosted
+       elsewhere. Without a reachable API the app runs fully in the browser. -->
+  <meta name="api-base" content="">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%233987e5'/%3E%3Cpath d='M5 16l4-5 3 3 7-7' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/app.css">
+  <script>
+    // Apply the saved theme before first paint (no flash).
+    try {
+      const theme = localStorage.getItem('alpha-ai-trader:theme');
+      if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
+    } catch {}
+  </script>
 </head>
 <body>
-    <div class="container">
-        <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="logo">
-                <i class="fas fa-robot neon-cyan"></i>
-                <h1>AI Trading Coach</h1>
+  <div class="app">
+    <aside class="sidebar" aria-label="Main navigation">
+      <div class="brand">
+        <span class="brand-mark"><i data-icon="logo"></i></span>
+        <span>Alpha AI Trader<small>Behavioural trading coach</small></span>
+      </div>
+      <nav class="nav">
+        <button class="nav-link" data-view="dashboard"><i data-icon="dashboard"></i>Dashboard</button>
+        <button class="nav-link" data-view="analytics"><i data-icon="analytics"></i>Analytics</button>
+        <button class="nav-link" data-view="coach"><i data-icon="coach"></i>AI Coach</button>
+        <button class="nav-link" data-view="journal"><i data-icon="journal"></i>Journal</button>
+      </nav>
+      <div class="engine-card" id="engine-card">
+        <strong><i data-icon="cpu"></i>Alpha Engine</strong>
+        <div id="engine-status">Starting...</div>
+        <p id="engine-perf"></p>
+      </div>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <div class="topbar-title">
+          <h1 id="view-title">Dashboard</h1>
+          <p id="view-subtitle">Your trading performance and behaviour at a glance</p>
+        </div>
+        <div class="topbar-actions">
+          <span class="pill" id="mode-pill"><span class="dot"></span>Connecting</span>
+          <button class="btn btn-icon" id="theme-toggle" aria-label="Toggle dark mode"><i data-icon="moon"></i></button>
+          <button class="btn btn-primary" data-action="add-trade"><i data-icon="plus"></i><span class="btn-label">Add trade</span></button>
+        </div>
+      </header>
+
+      <!-- Dashboard -->
+      <section class="view" id="view-dashboard" aria-labelledby="view-title">
+        <div class="grid">
+          <article class="card hero span-4" aria-label="Alpha Score">
+            <div class="hero-label">Alpha Score</div>
+            <div class="hero-figure">
+              <div class="hero-value" id="alpha-score">--<small>/100</small></div>
+              <span class="grade" id="alpha-grade">-</span>
             </div>
-            
-            <nav class="nav-menu">
-                <a href="#" class="nav-item active" data-section="dashboard">
-                    <i class="fas fa-chart-line"></i>
-                    <span>Dashboard</span>
-                </a>
-                <a href="#" class="nav-item" data-section="coach">
-                    <i class="fas fa-comment-dots"></i>
-                    <span>AI Coach</span>
-                </a>
-                <div class="nav-divider"></div>
-                <a href="#" class="nav-item" id="refresh-data">
-                    <i class="fas fa-sync-alt"></i>
-                    <span>Refresh Data</span>
-                </a>
-            </nav>
-            
-            <div class="status-card">
-                <div class="status-header">
-                    <span>Backend Status</span>
-                    <span class="status-badge" id="status-badge">Checking...</span>
-                </div>
-                <div class="status-footer">
-                    <small id="status-detail">Connecting to API...</small>
-                </div>
+            <div class="meter" style="--meter-color: var(--accent)"><span id="alpha-meter" style="width: 0%"></span></div>
+            <p class="hero-summary" id="alpha-summary">Analysing your journal...</p>
+          </article>
+
+          <div class="tiles span-8" id="kpi-tiles"></div>
+
+          <article class="card span-8">
+            <div class="card-head">
+              <div><h2>Equity curve</h2><p id="equity-sub">Account balance after every trade</p></div>
+              <button class="btn btn-sm btn-ghost chart-toggle" data-toggle="equity"><i data-icon="table"></i>Table</button>
             </div>
-        </aside>
+            <div class="chart" id="chart-equity"></div>
+          </article>
 
-        <!-- Main Content -->
-        <main class="main-content">
-            <!-- Header -->
-            <header class="header">
-                <div class="header-title">
-                    <h2 id="page-title">Trading Dashboard</h2>
-                    <p id="page-subtitle">Real-time insights and AI coaching</p>
-                </div>
-                <div class="header-actions">
-                    <div class="user-profile">
-                        <span>Demo Trader</span>
-                        <div class="avatar">DT</div>
-                    </div>
-                </div>
-            </header>
+          <article class="card span-4">
+            <div class="card-head"><div><h2>Trader DNA</h2><p>What drives your results (0-100)</p></div></div>
+            <div class="meters" id="dna"></div>
+          </article>
 
-            <!-- Dashboard Section -->
-            <section id="dashboard-section" class="dashboard-section active">
-                <!-- KPI Cards -->
-                <div class="kpi-grid">
-                    <div class="kpi-card glass">
-                        <div class="kpi-header">
-                            <h3>Net P/L</h3>
-                            <i class="fas fa-wallet neon-cyan"></i>
-                        </div>
-                        <div class="kpi-value" id="net-pl">--</div>
-                        <div class="kpi-trend" id="net-pl-trend">
-                            <span>Loading...</span>
-                        </div>
-                    </div>
-                    
-                    <div class="kpi-card glass">
-                        <div class="kpi-header">
-                            <h3>Win Rate</h3>
-                            <i class="fas fa-trophy neon-green"></i>
-                        </div>
-                        <div class="kpi-value" id="win-rate">--</div>
-                        <div class="kpi-trend" id="win-rate-trend">
-                            <span>Loading...</span>
-                        </div>
-                    </div>
-                    
-                    <div class="kpi-card glass">
-                        <div class="kpi-header">
-                            <h3>Total Trades</h3>
-                            <i class="fas fa-exchange-alt"></i>
-                        </div>
-                        <div class="kpi-value" id="total-trades">--</div>
-                        <div class="kpi-trend" id="total-trades-trend">
-                            <span>Loading...</span>
-                        </div>
-                    </div>
-                    
-                    <div class="kpi-card glass">
-                        <div class="kpi-header">
-                            <h3>Risk Score</h3>
-                            <i class="fas fa-shield-alt"></i>
-                        </div>
-                        <div class="kpi-value" id="risk-score">--</div>
-                        <div class="kpi-trend" id="risk-trend">
-                            <span>Loading...</span>
-                        </div>
-                    </div>
-                </div>
+          <article class="card span-7">
+            <div class="card-head"><div><h2>Key insights</h2><p>Ranked by what they are worth to you</p></div></div>
+            <ul class="list" id="insights"></ul>
+          </article>
 
-                <!-- Behavioral Insights -->
-                <div class="section-card glass">
-                    <div class="card-header">
-                        <h3><i class="fas fa-brain neon-cyan"></i> Behavioral Insights</h3>
-                    </div>
-                    <p class="insights-summary" id="insights-summary">Analyzing your trading behavior...</p>
-                    <ul class="insights-list" id="insights-list"></ul>
-                </div>
+          <article class="card span-5">
+            <div class="card-head"><div><h2>Behavioural biases</h2><p id="bias-sub">Detected from your trades and notes</p></div></div>
+            <ul class="list" id="biases"></ul>
+          </article>
 
-                <!-- Recent Trades Table -->
-                <div class="section-card glass">
-                    <div class="card-header">
-                        <h3>Recent Trades</h3>
-                        <button class="btn-icon" id="refresh-trades" title="Refresh trades" aria-label="Refresh trades">
-                            <i class="fas fa-redo"></i>
-                        </button>
-                    </div>
-                    <div class="table-container">
-                        <table class="trades-table">
-                            <thead>
-                                <tr>
-                                    <th>Symbol</th>
-                                    <th>Type</th>
-                                    <th>Entry</th>
-                                    <th>Exit</th>
-                                    <th>P/L</th>
-                                    <th>Date</th>
-                                    <th>Status</th>
-                                    <th><span class="sr-only">Coach</span></th>
-                                </tr>
-                            </thead>
-                            <tbody id="trades-table-body">
-                                <!-- Data will be populated here -->
-                                <tr class="loading-row">
-                                    <td colspan="8">
-                                        <div class="loading-spinner"></div>
-                                        <span>Loading trades...</span>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
+          <article class="card span-12">
+            <div class="card-head">
+              <div><h2>Recent trades</h2><p>Latest activity from your journal</p></div>
+              <button class="btn btn-sm" data-view-link="journal">Open journal</button>
+            </div>
+            <div class="table-wrap" id="recent-trades"></div>
+          </article>
+        </div>
+      </section>
 
-            <!-- AI Coach Section -->
-            <section id="coach-section" class="coach-section">
-                <div class="coach-container">
-                    <div class="section-card glass chat-container">
-                        <div class="card-header">
-                            <h3><i class="fas fa-robot neon-cyan"></i> AI Trading Coach</h3>
-                            <div class="coach-actions">
-                                <span class="status-online" id="coach-status">Connecting...</span>
-                                <button class="btn-icon" id="clear-chat" title="Start a new conversation" aria-label="Start a new conversation">
-                                    <i class="fas fa-broom"></i>
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div class="chat-messages" id="chat-messages">
-                            <div class="message ai-message">
-                                <div class="message-avatar">
-                                    <i class="fas fa-robot"></i>
-                                </div>
-                                <div class="message-content">
-                                    <div class="message-sender">AI Coach</div>
-                                    <div class="message-text">
-                                        Hello! I'm your AI Trading Coach. Ask me anything about your trades, strategies, or risk management. How can I help you today?
-                                    </div>
-                                    <div class="message-time">Just now</div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="chat-input-container">
-                            <div class="typing-indicator" id="typing-indicator">
-                                <span>AI Coach is typing</span>
-                                <div class="typing-dots">
-                                    <div class="dot"></div>
-                                    <div class="dot"></div>
-                                    <div class="dot"></div>
-                                </div>
-                            </div>
-                            <div class="input-group">
-                                <textarea 
-                                    id="message-input" 
-                                    placeholder="Ask your trading question... (e.g., 'Analyze my recent trades', 'How can I improve my risk score?')" 
-                                    rows="2"
-                                ></textarea>
-                                <button id="send-button" class="btn-primary" aria-label="Send message">
-                                    <i class="fas fa-paper-plane"></i>
-                                    Send
-                                </button>
-                            </div>
-                            <div class="input-hint">
-                                <small>Press <kbd>Enter</kbd> to send, <kbd>Shift+Enter</kbd> for new line</small>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="quick-questions glass">
-                        <h4>Quick Questions</h4>
-                        <div class="questions-grid">
-                            <button class="quick-question" data-question="Analyze my recent trade performance">
-                                Analyze performance
-                            </button>
-                            <button class="quick-question" data-question="Suggest risk management improvements">
-                                Risk suggestions
-                            </button>
-                            <button class="quick-question" data-question="What trading patterns do you see in my history?">
-                                Identify patterns
-                            </button>
-                            <button class="quick-question" data-question="Give me tips to increase my win rate">
-                                Win rate tips
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </section>
-        </main>
+      <!-- Analytics -->
+      <section class="view" id="view-analytics" hidden>
+        <div class="toolbar">
+          <span class="tile-label">Forecast horizon</span>
+          <div class="segmented" id="horizon" role="group" aria-label="Monte Carlo horizon">
+            <button data-horizon="25">25 trades</button>
+            <button data-horizon="50">50 trades</button>
+            <button data-horizon="100">100 trades</button>
+            <button data-horizon="250">250 trades</button>
+          </div>
+        </div>
+        <div class="grid">
+          <article class="card span-8">
+            <div class="card-head">
+              <div><h2>Monte Carlo forecast</h2><p id="mc-sub">1,000 simulated futures from your own results</p></div>
+              <button class="btn btn-sm btn-ghost chart-toggle" data-toggle="fan"><i data-icon="table"></i>Table</button>
+            </div>
+            <div class="chart" id="chart-fan"></div>
+          </article>
+          <div class="tiles span-4" id="mc-tiles" style="grid-template-columns: repeat(2, minmax(0, 1fr))"></div>
+
+          <article class="card span-6">
+            <div class="card-head">
+              <div><h2>Drawdown</h2><p>Distance below the previous equity peak</p></div>
+              <button class="btn btn-sm btn-ghost chart-toggle" data-toggle="drawdown"><i data-icon="table"></i>Table</button>
+            </div>
+            <div class="chart" id="chart-drawdown"></div>
+          </article>
+          <article class="card span-6">
+            <div class="card-head">
+              <div><h2>R-multiple distribution</h2><p>Outcome of each trade in units of planned risk</p></div>
+              <button class="btn btn-sm btn-ghost chart-toggle" data-toggle="rdist"><i data-icon="table"></i>Table</button>
+            </div>
+            <div class="chart" id="chart-rdist"></div>
+          </article>
+
+          <article class="card span-6">
+            <div class="card-head">
+              <div><h2>Profit by market</h2><p>Net P/L per symbol</p></div>
+              <button class="btn btn-sm btn-ghost chart-toggle" data-toggle="symbols"><i data-icon="table"></i>Table</button>
+            </div>
+            <div class="chart" id="chart-symbols"></div>
+          </article>
+          <article class="card span-6">
+            <div class="card-head">
+              <div><h2>When you make money</h2><p>Net P/L by weekday and session (UTC)</p></div>
+              <button class="btn btn-sm btn-ghost chart-toggle" data-toggle="heatmap"><i data-icon="table"></i>Table</button>
+            </div>
+            <div class="chart" id="chart-heatmap"></div>
+          </article>
+
+          <article class="card span-6">
+            <div class="card-head">
+              <div><h2>Monthly P/L</h2><p>Net result per calendar month</p></div>
+              <button class="btn btn-sm btn-ghost chart-toggle" data-toggle="monthly"><i data-icon="table"></i>Table</button>
+            </div>
+            <div class="chart" id="chart-monthly"></div>
+          </article>
+          <article class="card span-6">
+            <div class="card-head"><div><h2>Advanced metrics</h2><p>Computed by the quant engine</p></div></div>
+            <div class="table-wrap" id="metrics-table"></div>
+          </article>
+        </div>
+      </section>
+
+      <!-- Coach -->
+      <section class="view" id="view-coach" hidden>
+        <div class="grid">
+          <article class="card chat span-8" aria-label="AI coach chat">
+            <div class="chat-head">
+              <span class="avatar"><i data-icon="coach"></i></span>
+              <div style="flex:1">
+                <h2>Alpha Coach</h2>
+                <p id="coach-engine">Built-in AI engine, no API key needed</p>
+              </div>
+              <button class="btn btn-sm btn-ghost" id="clear-chat" title="Start a new conversation"><i data-icon="broom"></i><span class="btn-label">New chat</span></button>
+            </div>
+            <div class="messages" id="messages" aria-live="polite"></div>
+            <form class="composer" id="composer">
+              <label class="sr-only" for="message-input">Ask the coach</label>
+              <textarea id="message-input" rows="1" maxlength="2000" placeholder="Ask about your risk, biases, a symbol, the best session, a forecast..."></textarea>
+              <button class="btn btn-primary" id="send-button" type="submit"><i data-icon="send"></i><span class="btn-label">Send</span></button>
+            </form>
+          </article>
+
+          <div class="span-4" style="display:flex; flex-direction:column; gap:18px">
+            <article class="card">
+              <div class="card-head"><div><h2>Try asking</h2><p>The NLU engine understands typos too</p></div></div>
+              <div class="suggestions" id="suggestions"></div>
+            </article>
+            <article class="card">
+              <div class="card-head"><div><h2>How Alpha thinks</h2><p>Five engines, all running locally</p></div></div>
+              <ul class="modules">
+                <li><span class="mod-icon"><i data-icon="chart"></i></span><div><strong>Quant engine</strong>Sharpe, Sortino, SQN, Kelly, drawdown, R-multiples</div></li>
+                <li><span class="mod-icon"><i data-icon="brain"></i></span><div><strong>Behaviour engine</strong>Loss aversion, revenge trading, overconfidence, FOMO</div></li>
+                <li><span class="mod-icon"><i data-icon="dice"></i></span><div><strong>Monte Carlo engine</strong>1,000 simulated futures of your strategy</div></li>
+                <li><span class="mod-icon"><i data-icon="message"></i></span><div><strong>NLU engine</strong>Machine-learning intent classifier (TF-IDF)</div></li>
+                <li><span class="mod-icon"><i data-icon="zap"></i></span><div><strong>Synthesis engine</strong>Answers written from your own numbers</div></li>
+              </ul>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- Journal -->
+      <section class="view" id="view-journal" hidden>
+        <article class="card">
+          <div class="toolbar">
+            <label class="sr-only" for="journal-search">Search trades</label>
+            <input class="input" id="journal-search" type="search" placeholder="Search symbol or notes" style="width: 220px">
+            <label class="sr-only" for="journal-symbol">Filter by symbol</label>
+            <select class="select" id="journal-symbol"><option value="">All markets</option></select>
+            <span class="spacer"></span>
+            <button class="btn btn-sm" data-action="import"><i data-icon="upload"></i>Import CSV</button>
+            <button class="btn btn-sm" data-action="export"><i data-icon="download"></i>Export CSV</button>
+            <select class="select btn-sm" id="dataset" hidden aria-label="Demo dataset">
+              <option value="">Demo data...</option>
+              <option value="sample">Reset to 160-trade demo</option>
+              <option value="big">Big data: 2,000 trades</option>
+            </select>
+            <input type="file" id="csv-file" accept=".csv,text/csv" hidden>
+          </div>
+          <div class="table-wrap" id="journal-table"></div>
+          <div class="pager" id="journal-pager"></div>
+        </article>
+      </section>
     </div>
 
-    <script src="script.js"></script>
+    <nav class="tabbar" aria-label="Main navigation">
+      <button class="nav-link" data-view="dashboard"><i data-icon="dashboard"></i>Dashboard</button>
+      <button class="nav-link" data-view="analytics"><i data-icon="analytics"></i>Analytics</button>
+      <button class="nav-link" data-view="coach"><i data-icon="coach"></i>Coach</button>
+      <button class="nav-link" data-view="journal"><i data-icon="journal"></i>Journal</button>
+    </nav>
+  </div>
+
+  <dialog class="modal" id="trade-dialog" aria-labelledby="trade-dialog-title">
+    <form method="dialog" id="trade-form" novalidate>
+      <div class="modal-head">
+        <h2 id="trade-dialog-title">Log a trade</h2>
+        <button class="btn btn-icon btn-ghost" value="cancel" formnovalidate aria-label="Close"><i data-icon="close"></i></button>
+      </div>
+      <div class="modal-body">
+        <label class="field">Symbol<input class="input" name="symbol" placeholder="BTCUSD" required autocomplete="off"></label>
+        <label class="field">Direction<select class="select" name="type"><option value="buy">Long (buy)</option><option value="sell">Short (sell)</option></select></label>
+        <label class="field">Entry price<input class="input" name="entryPrice" type="number" step="any" min="0" required></label>
+        <label class="field">Exit price<input class="input" name="exitPrice" type="number" step="any" min="0" required></label>
+        <label class="field">Position size<input class="input" name="positionSize" type="number" step="any" min="0" required></label>
+        <label class="field">Stop loss<input class="input" name="stopLoss" type="number" step="any" min="0" placeholder="Recommended"></label>
+        <label class="field">Take profit<input class="input" name="takeProfit" type="number" step="any" min="0" placeholder="Optional"></label>
+        <label class="field">Duration (minutes)<input class="input" name="duration" type="number" step="1" min="0" placeholder="0"></label>
+        <label class="field full">Entry time<input class="input" name="timestamp" type="datetime-local"></label>
+        <label class="field full">Notes (setup, emotions)<textarea class="textarea" name="notes" rows="2" maxlength="1000" placeholder="e.g. Breakout retest, followed plan"></textarea></label>
+        <p class="form-errors" id="trade-errors" role="alert"></p>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" value="cancel" formnovalidate>Cancel</button>
+        <button class="btn btn-primary" id="save-trade" value="save">Save trade</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
+  <noscript><p style="padding:24px">Alpha AI Trader needs JavaScript enabled.</p></noscript>
+  <script type="module" src="js/app.js"></script>
 </body>
 </html>

@@ -1,198 +1,145 @@
 # alpha-ai-trader
 
-> AI trading coach that analyses your trade journal for behavioural biases (loss aversion, revenge trading, overconfidence, FOMO) and coaches you on discipline. Full stack, running entirely on the **Cloudflare free tier**.
+> AI trading coach with a **built-in AI engine that needs no API key**. It finds the behavioural leaks in your trading (loss aversion, revenge trading, overconfidence, FOMO), forecasts your future with Monte Carlo simulation, and coaches you in plain language. It runs **free on Cloudflare or Vercel**, on any Node host, or fully offline in the browser.
 
-![Cloudflare Workers](https://img.shields.io/badge/Cloudflare_Workers-F38020?style=for-the-badge&logo=cloudflare&logoColor=white) ![Hono](https://img.shields.io/badge/Hono-E36002?style=for-the-badge&logo=hono&logoColor=white) ![D1](https://img.shields.io/badge/Cloudflare_D1-F38020?style=for-the-badge&logo=sqlite&logoColor=white) ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
+![Cloudflare Workers](https://img.shields.io/badge/Cloudflare_Workers-F38020?style=for-the-badge&logo=cloudflare&logoColor=white) ![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white) ![Hono](https://img.shields.io/badge/Hono-E36002?style=for-the-badge&logo=hono&logoColor=white) ![No API key](https://img.shields.io/badge/AI-no_API_key-2a78d6?style=for-the-badge)
 
-## 📑 Table of Contents
+## 📑 Contents
 
-- [Description](#-description)
-- [Key Features](#-key-features)
-- [Architecture](#-architecture)
-- [Deploy to Cloudflare (free)](#-deploy-to-cloudflare-free)
-- [Local Development](#-local-development)
+- [Features](#-features)
+- [The Alpha Engine](#-the-alpha-engine-no-api-key)
+- [Tested results](#-tested-results)
+- [Deploy (free)](#-deploy-free)
+- [Local development](#-local-development)
 - [Configuration](#-configuration)
-- [API Endpoints](#-api-endpoints)
-- [Project Structure](#-project-structure)
-- [Testing](#-testing)
-- [Contributing](#-contributing)
+- [API](#-api)
+- [Project structure](#-project-structure)
 
-## 📝 Description
+## ✨ Features
 
-Most trading tools focus on market signals. Alpha AI Trader focuses on the trader. It reads your trades (entry, exit, stop loss, size, notes) and detects psychological biases from how you actually behave. For example, it notices when you close losers beyond your planned stop, size up right after a loss, or enter on FOMO. It then scores your risk and coaches you through an AI chat.
+- **Alpha Score & Trader DNA:** one 0-100 score plus five traits (discipline, risk control, emotional control, consistency, edge) that explain *why* your results look the way they do.
+- **Behavioural bias detection:** loss aversion (stops not honoured, losers held longer), revenge trading (sizing up or jumping back in after a loss), overconfidence, FOMO and missing stops. Each finding comes with evidence, the dollars it cost you and a fix.
+- **Monte Carlo forecast:** 1,000 simulated futures of your next 25-250 trades, giving your chance of profit, median outcome, risk of ruin and worst-case drawdown.
+- **Pro analytics:** equity and drawdown curves, R-multiple distribution, P/L by market, a weekday × session heatmap, monthly P/L, Sharpe, Sortino, SQN, Kelly, payoff ratio and recovery factor.
+- **AI coach chat:** understands free-form questions (typos too), answers from your real numbers, and can analyse any single trade.
+- **Trade journal:** add trades, search and filter, CSV import (most broker exports work) and CSV export.
+- **Beautiful, accessible UI:** light and dark themes, mobile layout, keyboard-navigable charts with tooltips, and a table view for every chart.
+- **Never breaks:** if the API is unreachable, or the host has no database, everything runs in the browser with the same engine and your trades are saved locally.
 
-## ✨ Key Features
+## 🧠 The Alpha Engine (no API key)
 
-- **🧠 Behavioural bias detection:** rule-based and deterministic. It detects loss aversion (stops not honoured, losers held longer, notes like "hoping for recovery"), revenge trading, overconfidence, FOMO entries and missing stop losses, each with evidence and a fix.
-- **🛡️ Risk score:** a 0–100 score computed from biases, profit factor, win rate and streaks. There is no randomness.
-- **🤖 AI coach chat:** answers questions using your real stats. Conversations are saved per browser session in D1.
-- **🔁 Free AI fallback chain:** Groq (if you add a key) → Cloudflare Workers AI (free, no key) → built-in rules engine. The coach never goes offline.
-- **🔍 One-click trade analysis:** plan adherence score, R-multiple, stop-loss discipline and suggestions for any trade.
-- **📊 Dashboard:** net P/L, win rate, expectancy, risk score, behavioural insights and a trade table. It works on mobile.
-- **🔐 Safe prompt roles:** system prompts live on the server only. Clients can send only `user`/`assistant` messages, so they can't inject a `system` prompt.
+The coach is a custom, deterministic AI engine written in plain JavaScript (`public/engine/`). The same code runs on the server and in the browser:
 
-## 🏗 Architecture
-
-```
-Browser ──► Cloudflare Worker (one deploy, one URL)
-            ├── Static Assets  → public/ (dashboard: HTML/CSS/JS)
-            └── Hono API       → /api/*, /health
-                 ├── D1 (SQLite)       trades + chat sessions
-                 ├── Groq API          optional, primary AI
-                 ├── Workers AI        free AI fallback
-                 └── Rules engine      always-available fallback
-```
-
-The frontend and API share an origin, so there is no API URL to configure and no CORS setup. The D1 schema and demo trades are created automatically on the first request.
-
-## 🚀 Deploy to Cloudflare (free)
-
-Everything fits the **Workers Free** plan: no credit card is needed.
-
-| Service | Free allowance |
+| Module | What it does |
 | --- | --- |
-| Workers | 100,000 requests/day |
-| Static Assets | Free and unlimited (don't count as Worker requests) |
-| D1 database | 5 GB storage, 5M rows read / 100k rows written per day |
-| Workers AI | 10,000 neurons/day |
+| **Quant engine** (`quant.js`) | Win rate, profit factor, expectancy, Sharpe, Sortino, SQN, Kelly, drawdown, R-multiples and every breakdown |
+| **Behaviour engine** (`behavior.js`) | Bias detection from trades *and* journal notes, the risk score and Trader DNA |
+| **Monte Carlo engine** (`montecarlo.js`) | Bootstrap-resamples your own results into 1,000 futures (seeded, so results are reproducible) |
+| **NLU engine** (`nlu.js`) | A machine-learning intent classifier (TF-IDF over words + character trigrams, nearest-centroid model) that understands questions and typos |
+| **Synthesis engine** (`synthesis.js`) | Writes every answer from your own numbers, so answers are never invented |
 
-### One-time deploy from your machine
+**Optional LLM polish:** set `GROQ_API_KEY` (free tier at groq.com), or `WORKERS_AI_ENABLED=true` on Cloudflare. The engine's grounded answer is passed to the LLM as the source of truth. If the LLM fails or runs out of quota, the engine answers on its own.
 
-Requires Node.js 22+ and a free [Cloudflare account](https://dash.cloudflare.com/sign-up).
+## 📊 Tested results
 
-```bash
-git clone https://github.com/zahid397/alpha-ai-trader.git
-cd alpha-ai-trader
-npm install
+- **82 automated tests** (`npm test`): engine math, bias detection, NLU accuracy on 17 phrasings including typos, Monte Carlo determinism, CSV parsing, every API route, the Vercel entry point and prompt-injection protection.
+- **Big data:** the test suite analyses **5,000 trades** with no NaN anywhere. In the browser, the "Big data: 2,000 trades" demo is analysed in about 30 ms.
+- **Fast on the free tier:** on the server, a coach answer on the 160-trade demo takes about 3 ms of CPU (under 1 ms when cached) and about 7 ms at 1,000 trades, inside Cloudflare's free CPU budget. Dashboards are computed in the browser.
+- **Verified end to end** in Chromium: Cloudflare (`wrangler dev` + D1), the Node server (no database, so local mode), and static-only hosting (offline mode), in light and dark themes and at mobile width, with no console errors.
 
-npx wrangler login     # opens the browser once
-npm run deploy         # creates the D1 database automatically and deploys
-```
+## 🚀 Deploy (free)
 
-Wrangler prints your URL, e.g. `https://alpha-ai-trader.<your-subdomain>.workers.dev`. Open it and the dashboard loads with demo trades.
+Pick any one. The dashboard and API deploy together from this repo.
 
-**Optional extras:**
-
-```bash
-# Use Groq (free key at https://console.groq.com/keys) as the primary AI model
-npx wrangler secret put GROQ_API_KEY
-
-# Enable the admin endpoint GET /api/session/admin/sessions
-npx wrangler secret put ADMIN_TOKEN
-```
-
-Without `GROQ_API_KEY`, the coach uses Workers AI (free). If that quota runs out, it uses the rules engine.
-
-### Automatic deploys on every push (pick one)
-
-**Option A: Cloudflare Workers Builds (simplest).** In the Cloudflare dashboard go to *Workers & Pages → Create → Import a repository*, choose this repo, keep the deploy command `npx wrangler deploy`, and save. Every push to `main` then deploys.
-
-**Option B: GitHub Actions.** The included workflow (`.github/workflows/ci.yml`) runs the tests on every PR and deploys `main`. Add two repository secrets under *Settings → Secrets and variables → Actions*:
-
-- `CLOUDFLARE_ACCOUNT_ID`: shown on the right side of the Cloudflare dashboard *Workers & Pages* overview.
-- `CLOUDFLARE_API_TOKEN`: create it at *My Profile → API Tokens* from the **Edit Cloudflare Workers** template, then add the permission *Account → D1 → Edit*.
-
-Until those secrets exist, the deploy job only prints a notice.
-
-## 💻 Local Development
+### Option 1: Cloudflare Workers (recommended, persistent D1 database)
 
 ```bash
 npm install
-cp .dev.vars.example .dev.vars   # optional: GROQ_API_KEY, ADMIN_TOKEN, ENVIRONMENT
-npm run dev                      # http://localhost:8787
+npx wrangler login
+npm run deploy        # creates the D1 database automatically on first deploy
 ```
 
-`npm run dev` runs the real Workers runtime locally with a local SQLite copy of D1 (stored in `.wrangler/`). It doesn't need a Cloudflare login. Workers AI is remote-only, so locally the coach uses Groq (if `GROQ_API_KEY` is in `.dev.vars`) or the rules engine. After `npx wrangler login`, use `npm run dev:ai` to call Workers AI from local dev.
+Open the printed `https://alpha-ai-trader.<you>.workers.dev`. For automatic deploys, connect the repo in the Cloudflare dashboard (*Workers & Pages → Create → Import a repository*), or add the `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` secrets to use `.github/workflows/ci.yml`.
+
+### Option 2: Vercel (Hobby plan)
+
+1. Import the repo at [vercel.com/new](https://vercel.com/new) (or push to your connected repo).
+2. Keep the defaults. `vercel.json` configures everything: `public/` is served as the site and `api/index.js` becomes the API function.
+3. Deploy.
+
+> **Fixed:** earlier versions crashed on Vercel with `500 FUNCTION_INVOCATION_FAILED`. Vercel's Hono preset loaded `src/app.js`, which did not default-export an app. Now `vercel.json` defines an explicit function entry, and `src/app.js` also default-exports the app, so both setups work. Vercel has no free database here, so the dashboard automatically keeps your trades in the browser.
+
+### Option 3: Any Node host (Render, Railway, Fly, a VPS)
+
+```bash
+npm install --omit=dev
+npm start             # serves the dashboard + API on $PORT (default 3000)
+```
+
+### Option 4: Static hosting only (GitHub Pages, Netlify drop)
+
+Upload the `public/` folder. With no API, the app runs fully in the browser (offline mode) using the same Alpha Engine.
+
+## 💻 Local development
+
+```bash
+npm install
+npm run dev           # Cloudflare runtime + local D1 at http://localhost:8787
+# or
+npm start             # plain Node server at http://localhost:3000
+npm test              # 82 tests
+npm run check         # bundle the Worker exactly as `wrangler deploy` would
+```
+
+Copy `.dev.vars.example` to `.dev.vars` for optional local secrets.
 
 ## ⚙️ Configuration
 
-Plain variables live in `wrangler.jsonc` → `vars`. Secrets go in `wrangler secret put` (production) or `.dev.vars` (local).
+Everything is optional. On Cloudflare, set these in `wrangler.jsonc` → `vars` or with `wrangler secret put`. On Vercel/Node, use environment variables.
 
-| Name | Type | Default | Purpose |
-| --- | --- | --- | --- |
-| `GROQ_API_KEY` | secret | – | Enables Groq as the primary AI provider |
-| `ADMIN_TOKEN` | secret | – | Bearer token for the admin session list (disabled when unset) |
-| `GROQ_MODEL` | var | `llama-3.3-70b-versatile` | Groq model id |
-| `WORKERS_AI_MODEL` | var | `@cf/meta/llama-3.1-8b-instruct` | Workers AI model id |
-| `USE_MOCK_AI` | var | `false` | `true` forces the rules engine |
-| `WORKERS_AI_ENABLED` | var | `true` | `false` skips Workers AI (set automatically by `npm run dev`) |
-| `CORS_ORIGIN` | var | `*` | Comma-separated allowed origins for `/api/*` |
-| `RATE_LIMIT_MAX` / `RATE_LIMIT_WINDOW_MS` | var | `30` / `60000` | Per-IP limit on `/api/coach/*` |
-| `ENVIRONMENT` | var | `production` | `development` exposes error details |
+| Name | Default | Purpose |
+| --- | --- | --- |
+| `GROQ_API_KEY` | – | Optional: a Groq LLM polishes the engine's answers |
+| `WORKERS_AI_ENABLED` | `false` | Cloudflare only: `true` lets Workers AI polish answers |
+| `USE_MOCK_AI` / `AI_PROVIDER=alpha` | – | Force engine-only answers even if an LLM is configured |
+| `ADMIN_TOKEN` | – | Bearer token for `GET /api/session/admin/sessions` (disabled when unset) |
+| `CORS_ORIGIN` | `*` | Comma-separated origins allowed to call `/api/*` |
+| `RATE_LIMIT_MAX` / `RATE_LIMIT_WINDOW_MS` | `60` / `60000` | Per-IP limit on `/api/coach/*` |
+| `ENVIRONMENT` | `production` | `development` shows error details |
 
-To host the frontend somewhere else, set `<meta name="api-base" content="https://your-worker.workers.dev">` in `public/index.html`.
-
-## 🌐 API Endpoints
+## 🌐 API
 
 | Method | Path | Description |
 | --- | --- | --- |
-| GET | `/health`, `/api/health` | Status, AI mode (`groq` / `workers-ai` / `rules`), storage (`d1` / `memory`) |
-| GET | `/api` | API info and route list |
-| GET | `/api/trades?symbol=&startDate=&endDate=` | List trades, newest first |
-| GET | `/api/trades/stats/summary` | Stats, biases, patterns, risk score, heatmap |
-| GET | `/api/trades/:id` | Single trade |
+| GET | `/health`, `/api/health` | Status, platform, engine, AI mode, storage (`d1` / `memory`) |
+| GET | `/api/trades?symbol=&startDate=&endDate=` | List trades (newest first) |
 | POST | `/api/trades` | Add a trade: `symbol`, `type` (`buy`/`sell`/`long`/`short`), `entryPrice`, `exitPrice`, `positionSize`, optional `stopLoss`, `takeProfit`, `duration`, `notes`, `timestamp` |
-| PUT | `/api/trades/:id` | Partial update (profit/status recomputed) |
-| DELETE | `/api/trades/:id` | Delete a trade |
-| GET | `/api/history` | Full history: period stats, symbol performance, chart data |
-| POST | `/api/coach/chat` | `{ message, sessionId? }` → `{ reply, source }` |
+| POST | `/api/trades/import` | Bulk import `{ trades: [...] }` (up to 1,000) |
+| PUT / DELETE | `/api/trades/:id` | Update (profit recomputed) / delete |
+| GET | `/api/trades/stats/summary` | Full Alpha Engine report: stats, equity, breakdowns, biases, DNA, Monte Carlo, insights |
+| GET | `/api/history` | History view with period comparison |
+| POST | `/api/coach/chat` | `{ message, sessionId? , trades? }` → `{ reply, intent, confidence, highlights, source }` |
 | POST | `/api/coach/analyze/:tradeId` | Analyse one trade |
-| POST | `/api/coach/advice` | `{ marketContext, traderProfile? }` → short coaching |
-| GET | `/api/coach/biases` | Bias report + coaching summary |
-| POST | `/api/coach/market-analysis` | Coaching on a **simulated** market snapshot |
-| GET | `/api/session/:id?` | Get or create a chat session |
-| GET | `/api/session/:id/history?type=&limit=` | Session messages |
-| POST | `/api/session/:id/message` | Add a `user`/`assistant` message |
-| PUT | `/api/session/:id/metadata` | Merge session metadata |
-| DELETE | `/api/session/:id/messages` | Clear a conversation |
-| GET | `/api/session/admin/sessions` | All sessions (`Authorization: Bearer <ADMIN_TOKEN>`) |
+| POST | `/api/coach/advice` | `{ marketContext }` → short coaching |
+| GET | `/api/coach/biases` | Bias report + summary |
+| GET/POST/PUT/DELETE | `/api/session/...` | Chat sessions (`user`/`assistant` roles only) |
 
-Example:
-
-```bash
-curl -X POST https://alpha-ai-trader.<your-subdomain>.workers.dev/api/coach/chat \
-  -H 'Content-Type: application/json' \
-  -d '{"message":"What is my biggest weakness?"}'
-```
-
-## 📁 Project Structure
+## 📁 Project structure
 
 ```
 .
-├── src/
-│   ├── index.js              # Worker entry
-│   ├── app.js                # Hono app: middleware, routes, errors
-│   ├── config.js             # env → config, AI mode
-│   ├── routes/               # trades, coach, history, session
-│   ├── services/
-│   │   ├── tradeAnalyzer.js  # stats, patterns, bias detection, risk score
-│   │   ├── tradeModel.js     # trade validation + profit/status
-│   │   ├── coachService.js   # AI features + rule-based fallbacks
-│   │   ├── promptBuilder.js  # server-side system prompts
-│   │   ├── aiService.js      # Groq → Workers AI provider chain
-│   │   └── sessionService.js # chat sessions / roles
-│   ├── storage/              # D1 store, in-memory store (fallback + tests)
-│   ├── middleware/           # rate limit, admin auth
-│   └── lib/http.js
-├── public/                   # dashboard (served as static assets)
-├── data/sampleTrades.json    # demo trades seeded into D1 on first run
-├── test/                     # node:test suites
-├── wrangler.jsonc            # Cloudflare config
-└── .github/workflows/ci.yml  # tests + optional deploy
+├── public/                 # the site (served statically everywhere)
+│   ├── index.html
+│   ├── css/app.css         # design system (light + dark)
+│   ├── js/                 # app controller, SVG charts, data layer, icons
+│   └── engine/             # Alpha Engine, shared by browser and server
+├── src/                    # API (Hono): routes, storage (D1 / memory), optional LLMs
+├── api/index.js            # Vercel function entry
+├── scripts/serve.mjs       # plain Node server (npm start)
+├── vercel.json             # Vercel config
+├── wrangler.jsonc          # Cloudflare config
+└── test/                   # node:test suites
 ```
-
-## 🧪 Testing
-
-```bash
-npm test        # unit + API tests (Node's built-in test runner, no extra deps)
-npm run check   # bundle the Worker exactly as `wrangler deploy` would, without uploading
-```
-
-## 👥 Contributing
-
-1. Fork the repository and create a branch: `git checkout -b feature/your-feature`
-2. Make your change and run `npm test`
-3. Open a pull request
 
 ---
 

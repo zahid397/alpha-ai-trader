@@ -1,6 +1,6 @@
 // Cloudflare Workers config. Everything here fits the Workers Free plan:
-// Workers (100k requests/day), Static Assets (free, unlimited), D1 (5 GB),
-// Workers AI (10k neurons/day) and Workers Logs.
+// Workers (100k requests/day), Static Assets (free, unlimited), D1 (5 GB)
+// and Workers Logs. The AI coach is the built-in Alpha Engine: no API key.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "alpha-ai-trader",
@@ -23,22 +23,24 @@
     }
   ],
 
-  // Free AI fallback when no GROQ_API_KEY secret is set.
+  // Optional: Cloudflare Workers AI (10k neurons/day free) to polish the
+  // Alpha Engine's answers. Only used when WORKERS_AI_ENABLED is "true".
   "ai": {
     "binding": "AI"
   },
 
   "vars": {
     "ENVIRONMENT": "production",
-    "GROQ_MODEL": "llama-3.3-70b-versatile",
+    "WORKERS_AI_ENABLED": "false",
     "WORKERS_AI_MODEL": "@cf/meta/llama-3.1-8b-instruct",
+    "GROQ_MODEL": "llama-3.3-70b-versatile",
     "CORS_ORIGIN": "*",
-    "RATE_LIMIT_MAX": "30",
+    "RATE_LIMIT_MAX": "60",
     "RATE_LIMIT_WINDOW_MS": "60000"
   },
 
   // Secrets (set with `npx wrangler secret put <NAME>`, never commit them):
-  //   GROQ_API_KEY - optional, enables Groq as the primary AI provider
+  //   GROQ_API_KEY - optional, lets a Groq LLM polish the engine's answers
   //   ADMIN_TOKEN  - optional, enables GET /api/session/admin/sessions
 
   "observability": {

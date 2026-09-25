@@ -1,9 +1,10 @@
 import { Hono } from 'hono';
+import { analyze, buildTrade, newTradeId } from '../../public/engine/index.js';
 import { httpError, readJson } from '../lib/http.js';
-import { analyzeTrader, categorizeTrades, generateHeatmapData } from '../services/tradeAnalyzer.js';
-import { buildTrade, newTradeId } from '../services/tradeModel.js';
+import { SERVER_ANALYSIS } from '../services/coachService.js';
 
 const trades = new Hono();
+export const MAX_IMPORT = 1000;
 
 function parseDate(value, name) {
   if (!value) return undefined;
@@ -20,8 +21,7 @@ function parseFilters(query) {
   };
 }
 
-const validationError = (c, errors) =>
-  c.json({ success: false, error: 'Invalid trade', details: errors }, 400);
+const validationError = (c, errors) => c.json({ success: false, error: 'Invalid trade', details: errors }, 400);
 
 // List trades (newest first), optionally filtered by symbol and date range.
 trades.get('/', async (c) => {
@@ -29,29 +29,40 @@ trades.get('/', async (c) => {
   return c.json({ success: true, count: list.length, trades: list });
 });
 
-// Dashboard summary: stats, patterns, biases and a deterministic risk score.
+// Full Alpha Engine report: stats, equity curve, breakdowns, biases, Trader
+// DNA, Monte Carlo forecast and ranked insights. Older fields are kept for
+// backwards compatibility.
 trades.get('/stats/summary', async (c) => {
   const list = await c.get('store').listTrades();
-  const analysis = analyzeTrader(list);
-  const categorized = categorizeTrades(list);
-
+  const report = analyze(list, SERVER_ANALYSIS);
   return c.json({
     success: true,
-    stats: analysis.stats,
-    patterns: analysis.patterns,
-    biases: analysis.biases,
-    riskScore: analysis.riskScore,
-    riskLevel: analysis.riskLevel,
-    behavioralPattern: analysis.behavioralPattern,
+    ...report,
     categories: {
-      wins: categorized.filter((t) => t.category.isWin).length,
-      losses: categorized.filter((t) => t.profit < 0).length,
-      bigWins: categorized.filter((t) => t.category.isBigWin).length,
-      bigLosses: categorized.filter((t) => t.category.isBigLoss).length
+      wins: report.stats.wins,
+      losses: report.stats.losses,
+      breakEven: report.stats.breakEven
     },
-    heatmap: generateHeatmapData(list),
     recentTrades: list.slice(0, 10)
   });
+});
+
+// Bulk import (CSV uploads are parsed in the browser and sent as JSON).
+trades.post('/import', async (c) => {
+  const body = await readJson(c);
+  if (!Array.isArray(body.trades) || !body.trades.length) throw httpError(400, 'trades must be a non-empty array');
+  if (body.trades.length > MAX_IMPORT) throw httpError(400, `At most ${MAX_IMPORT} trades per import`);
+
+  const valid = [];
+  const errors = [];
+  body.trades.forEach((input, index) => {
+    const { trade, errors: problems } = buildTrade(input, { id: newTradeId() });
+    if (problems) errors.push({ index, details: problems });
+    else valid.push(trade);
+  });
+
+  if (valid.length) await c.get('store').insertTrades(valid);
+  return c.json({ success: valid.length > 0, imported: valid.length, rejected: errors.length, errors: errors.slice(0, 20) }, valid.length ? 201 : 400);
 });
 
 trades.get('/:id', async (c) => {

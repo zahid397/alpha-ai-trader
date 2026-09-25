@@ -23,10 +23,6 @@ export async function readJson(c) {
   return body;
 }
 
-export function round2(value) {
-  return Math.round((value + Number.EPSILON) * 100) / 100;
-}
-
 // Constant-time string comparison for bearer tokens.
 export function safeEqual(a, b) {
   if (typeof a !== 'string' || typeof b !== 'string') return false;

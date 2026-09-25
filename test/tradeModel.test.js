@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { buildTrade, calculateProfit, exceededStopLoss } from '../src/services/tradeModel.js';
+import { buildTrade, calculateProfit, exceededStopLoss } from '../public/engine/tradeModel.js';
 
 const valid = { symbol: 'btcusd', type: 'buy', entryPrice: 100, exitPrice: 110, positionSize: 2 };
 

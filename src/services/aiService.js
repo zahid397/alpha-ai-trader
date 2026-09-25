@@ -38,12 +38,12 @@ async function callWorkersAi(ai, model, messages, { temperature, maxTokens }) {
 /**
  * Generate a completion with a provider fallback chain:
  *   Groq (if GROQ_API_KEY is set) -> Cloudflare Workers AI (if the AI binding
- *   exists) -> null, in which case callers use their rule-based answer.
+ *   exists) -> null, in which case callers use the Alpha Engine answer.
  * `system` always becomes the single system-role message.
  */
 export async function generateText(env, { system, messages = [], temperature = 0.4, maxTokens = 400, json = false }) {
   const config = getConfig(env);
-  if (config.forceRules) return null;
+  if (config.engineOnly) return null;
 
   const chat = [{ role: 'system', content: system }, ...messages];
 
@@ -61,7 +61,7 @@ export async function generateText(env, { system, messages = [], temperature = 0
       const text = (await callWorkersAi(env.AI, config.workersAiModel, chat, { temperature, maxTokens })).trim();
       if (text) return { text, source: 'workers-ai', model: config.workersAiModel };
     } catch (error) {
-      console.warn(`Workers AI request failed, using rule-based coach: ${error.message}`);
+      console.warn(`Workers AI request failed, using the Alpha Engine answer: ${error.message}`);
     }
   }
 

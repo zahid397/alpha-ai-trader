@@ -1,4 +1,4 @@
-import sampleTrades from '../../data/sampleTrades.json' with { type: 'json' };
+import { generateSampleTrades } from '../../public/engine/index.js';
 import { createD1Store } from './d1Store.js';
 import { createMemoryStore } from './memoryStore.js';
 
@@ -7,17 +7,18 @@ const d1Stores = new WeakMap();
 let memoryStore = null;
 
 export function getStore(env = {}) {
-  if (env.DB && typeof env.DB.prepare === 'function') {
-    let store = d1Stores.get(env.DB);
+  const db = env.DB;
+  if (db && typeof db.prepare === 'function') {
+    let store = d1Stores.get(db);
     if (!store) {
-      store = createD1Store(env.DB, sampleTrades);
-      d1Stores.set(env.DB, store);
+      store = createD1Store(db, generateSampleTrades());
+      d1Stores.set(db, store);
     }
     return store;
   }
 
-  if (!memoryStore) memoryStore = createMemoryStore(sampleTrades);
+  // No database (e.g. Vercel, plain Node): non-persistent memory store. The
+  // dashboard detects `storage: "memory"` and keeps trades in the browser.
+  if (!memoryStore) memoryStore = createMemoryStore(generateSampleTrades());
   return memoryStore;
 }
-
-export { sampleTrades };
