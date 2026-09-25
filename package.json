@@ -1,15 +1,18 @@
 {
   "name": "alpha-ai-trader",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "private": true,
-  "description": "AI Trading Coach: behavioral-bias analysis and AI coaching, deployed on Cloudflare Workers (free tier)",
+  "description": "AI trading coach with a built-in, key-free Alpha Engine. Runs on Cloudflare Workers, Vercel, or fully in the browser.",
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev --local --var WORKERS_AI_ENABLED:false",
-    "dev:ai": "wrangler dev",
+    "start": "node scripts/serve.mjs",
+    "dev": "wrangler dev --local",
+    "dev:ai": "wrangler dev --var WORKERS_AI_ENABLED:true",
     "deploy": "wrangler deploy",
     "test": "node --test \"test/**/*.test.js\"",
-    "check": "wrangler deploy --dry-run --outdir .wrangler/dry-run"
+    "check": "wrangler deploy --dry-run --outdir .wrangler/dry-run",
+    "game:build": "node scripts/build-game.mjs",
+    "game:test": "dotnet test game/CrimsonArena.slnx"
   },
   "engines": {
     "node": ">=22"

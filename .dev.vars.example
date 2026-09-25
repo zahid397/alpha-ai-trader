@@ -1,7 +1,7 @@
 # Local secrets for `npm run dev`. Copy to .dev.vars (git-ignored) and fill in.
-# Everything is optional: with nothing set, the coach uses its rule-based engine.
+# Everything is optional: the built-in Alpha Engine needs no API key.
 
-# Groq API key (free tier at https://console.groq.com/keys)
+# Optional: let a Groq LLM polish the engine's answers (free key at https://console.groq.com/keys)
 GROQ_API_KEY=
 
 # Bearer token for GET /api/session/admin/sessions

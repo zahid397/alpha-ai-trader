@@ -1,4 +1,4 @@
-import { normalizeSeedTrade } from '../services/tradeModel.js';
+import { normalizeSeedTrade } from '../../public/engine/index.js';
 import { byNewest, matchesFilters } from './filters.js';
 
 // Non-persistent store: used when no D1 binding is configured and in tests.
@@ -22,6 +22,11 @@ export function createMemoryStore(seedTrades = []) {
     async insertTrade(trade) {
       trades.push(clone(trade));
       return clone(trade);
+    },
+
+    async insertTrades(list) {
+      trades.push(...list.map(clone));
+      return list.length;
     },
 
     async updateTrade(trade) {

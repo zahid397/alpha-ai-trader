@@ -1,4 +1,4 @@
-import { normalizeSeedTrade, toTrade } from '../services/tradeModel.js';
+import { normalizeSeedTrade, toTrade } from '../../public/engine/index.js';
 
 // Schema is applied at runtime (idempotent) so a fresh, auto-provisioned D1
 // database works on the very first request, with no manual migration step.
@@ -37,6 +37,14 @@ const tradeParams = (t) => [
   t.id, t.symbol, t.type, t.entryPrice, t.exitPrice, t.positionSize, t.profit,
   t.duration, t.timestamp, t.notes, t.status, t.stopLoss, t.takeProfit
 ];
+
+// Insert many rows with ONE query: the rows travel as a single JSON
+// parameter and SQLite's json_each() expands them. This keeps seeding and CSV
+// imports far below D1's per-request query limit on the free plan.
+const JSON_FIELDS = ['id', 'symbol', 'type', 'entryPrice', 'exitPrice', 'positionSize', 'profit', 'duration', 'timestamp', 'notes', 'status', 'stopLoss', 'takeProfit'];
+const bulkInsertSql = (verb) =>
+  `${verb} INTO trades (${TRADE_COLUMNS}) SELECT ${JSON_FIELDS.map((f) => `json_extract(value, '$.${f}')`).join(', ')} FROM json_each(?)`;
+const BULK_CHUNK = 500;
 
 const rowToTrade = (row) =>
   toTrade({
@@ -81,11 +89,8 @@ export function createD1Store(db, seedTrades = []) {
     const seeded = await db.prepare("SELECT value FROM meta WHERE key = 'seeded'").first();
     if (seeded) return;
 
-    const insert = db.prepare(
-      `INSERT OR IGNORE INTO trades (${TRADE_COLUMNS}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    );
     await db.batch([
-      ...seedTrades.map((t) => insert.bind(...tradeParams(normalizeSeedTrade(t)))),
+      db.prepare(bulkInsertSql('INSERT OR IGNORE')).bind(JSON.stringify(seedTrades.map(normalizeSeedTrade))),
       db.prepare("INSERT OR IGNORE INTO meta (key, value) VALUES ('seeded', ?)").bind(new Date().toISOString())
     ]);
   }
@@ -130,6 +135,16 @@ export function createD1Store(db, seedTrades = []) {
         .bind(...tradeParams(trade))
         .run();
       return trade;
+    },
+
+    async insertTrades(list) {
+      await ensureReady();
+      const statements = [];
+      for (let i = 0; i < list.length; i += BULK_CHUNK) {
+        statements.push(db.prepare(bulkInsertSql('INSERT')).bind(JSON.stringify(list.slice(i, i + BULK_CHUNK))));
+      }
+      if (statements.length) await db.batch(statements);
+      return list.length;
     },
 
     async updateTrade(trade) {

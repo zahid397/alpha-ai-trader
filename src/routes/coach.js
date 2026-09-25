@@ -1,5 +1,7 @@
 import { Hono } from 'hono';
-import { httpError, readJson, round2 } from '../lib/http.js';
+import { buildTrade } from '../../public/engine/index.js';
+import { round2 } from '../../public/engine/math.js';
+import { httpError, readJson } from '../lib/http.js';
 import { analyzeTrade, biasReport, coachChat, coachingAdvice } from '../services/coachService.js';
 import {
   MAX_CHAT_INPUT_LENGTH,
@@ -11,6 +13,19 @@ import {
 } from '../services/sessionService.js';
 
 const coach = new Hono();
+const MAX_CLIENT_TRADES = 5000;
+
+// Trades supplied by the client (browser-local journals). Each one is
+// re-validated; invalid rows are dropped rather than trusted.
+function clientTrades(value) {
+  if (value === undefined || value === null) return null;
+  if (!Array.isArray(value)) throw httpError(400, 'trades must be an array');
+  if (value.length > MAX_CLIENT_TRADES) throw httpError(400, `At most ${MAX_CLIENT_TRADES} trades per request`);
+  return value
+    .map((input, i) => buildTrade(input, { id: typeof input?.id === 'string' && input.id.length <= 64 ? input.id : `client_${i}` }).trade)
+    .filter(Boolean)
+    .sort((a, b) => (a.timestamp < b.timestamp ? 1 : -1));
+}
 
 function requireText(value, name, maxLength = MAX_CHAT_INPUT_LENGTH) {
   const text = typeof value === 'string' ? value.trim() : '';
@@ -20,7 +35,8 @@ function requireText(value, name, maxLength = MAX_CHAT_INPUT_LENGTH) {
 }
 
 // Conversational coach. With a sessionId the conversation is stored and
-// reused as context; otherwise the client may pass `history` itself.
+// reused as context; otherwise the client may pass `history` itself. Pass
+// `trades` to analyse a browser-local journal instead of the stored one.
 coach.post('/chat', async (c) => {
   const body = await readJson(c);
   const message = requireText(body.message, 'message');
@@ -36,15 +52,19 @@ coach.post('/chat', async (c) => {
     history = toChatHistory(Array.isArray(body.history) ? body.history : []);
   }
 
-  const trades = await store.listTrades();
-  const { reply, source } = await coachChat(c.env, trades, { message, history });
+  const trades = clientTrades(body.trades) ?? (await store.listTrades());
+  const answer = await coachChat(c.env, trades, { message, history });
 
   if (session) {
-    appendMessages(session, makeMessage('user', message, 'chat'), makeMessage('assistant', reply, 'chat', { source }));
+    appendMessages(
+      session,
+      makeMessage('user', message, 'chat'),
+      makeMessage('assistant', answer.reply, 'chat', { source: answer.source, highlights: answer.highlights })
+    );
     await store.saveSession(session);
   }
 
-  return c.json({ success: true, reply, source, sessionId: session?.id ?? null, timestamp: new Date().toISOString() });
+  return c.json({ success: true, ...answer, sessionId: session?.id ?? null, timestamp: new Date().toISOString() });
 });
 
 // Analyse one stored trade.
@@ -69,7 +89,7 @@ coach.post('/advice', async (c) => {
   return c.json({ success: true, advice, source, timestamp: new Date().toISOString() });
 });
 
-// Behavioural bias report (rule-based detection + optional AI summary).
+// Behavioural bias report (Alpha Engine detection + optional LLM summary).
 coach.get('/biases', async (c) => {
   const trades = await c.get('store').listTrades();
   const report = await biasReport(c.env, trades);

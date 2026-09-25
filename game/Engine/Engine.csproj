@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Crimson Arena game engine: pure C# simulation (movement, physics,
+       combat, AI). No platform dependencies, so it runs in the browser via
+       WebAssembly (see ../Web) and in plain .NET for unit tests. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>CrimsonArena</RootNamespace>
+    <AssemblyName>CrimsonArena.Engine</AssemblyName>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+</Project>

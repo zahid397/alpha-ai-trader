@@ -1,12 +1,6 @@
 import { Hono } from 'hono';
-import {
-  analyzeTrader,
-  categorizeTrades,
-  computeStats,
-  dailyPnL,
-  generateHeatmapData,
-  symbolPerformance
-} from '../services/tradeAnalyzer.js';
+import { analyze, computeStats } from '../../public/engine/index.js';
+import { SERVER_ANALYSIS } from '../services/coachService.js';
 
 const history = new Hono();
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -14,13 +8,11 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 // Complete history with stats, period comparison, patterns and chart data.
 history.get('/', async (c) => {
   const trades = await c.get('store').listTrades();
-  const analysis = analyzeTrader(trades);
-  const categorized = categorizeTrades(trades);
+  const report = analyze(trades, SERVER_ANALYSIS);
+  const { stats, breakdowns } = report;
 
   const now = Date.now();
   const since = (days) => trades.filter((t) => new Date(t.timestamp).getTime() >= now - days * DAY_MS);
-  const { daily, cumulative } = dailyPnL(trades, 30);
-  const { stats } = analysis;
 
   return c.json({
     success: true,
@@ -31,31 +23,26 @@ history.get('/', async (c) => {
       profitFactor: stats.profitFactor,
       sharpeRatio: stats.sharpeRatio,
       maxDrawdown: stats.maxDrawdown,
-      riskScore: analysis.riskScore,
-      riskLevel: analysis.riskLevel
+      riskScore: report.riskScore,
+      riskLevel: report.riskLevel,
+      alphaScore: report.dna?.alphaScore ?? null
     },
     periodComparison: {
       weekly: computeStats(since(7)),
       monthly: computeStats(since(30)),
       allTime: stats
     },
-    symbolPerformance: symbolPerformance(trades),
-    patterns: {
-      technical: analysis.patterns,
-      behavioral: analysis.biases
-    },
-    behavioralPattern: analysis.behavioralPattern,
-    chartData: { daily, cumulative },
-    heatmap: generateHeatmapData(trades),
+    symbolPerformance: breakdowns.bySymbol,
+    patterns: { technical: report.patterns, behavioral: report.biases },
+    behavioralPattern: report.behavioralPattern,
+    chartData: { equity: report.equity, monthly: breakdowns.monthly, weekly: breakdowns.weekly },
+    heatmap: breakdowns.heatmap,
+    breakdowns,
+    dna: report.dna,
+    monteCarlo: report.monteCarlo,
+    insights: report.insights,
     recentTrades: trades.slice(0, 15),
-    categories: {
-      byOutcome: { wins: stats.wins, losses: stats.losses, breakEven: stats.breakEven },
-      byDuration: {
-        scalps: categorized.filter((t) => t.category.isScalp).length,
-        swings: categorized.filter((t) => t.category.isSwing).length,
-        longTerm: categorized.filter((t) => t.category.isLongTerm).length
-      }
-    }
+    categories: { byOutcome: { wins: stats.wins, losses: stats.losses, breakEven: stats.breakEven } }
   });
 });
 

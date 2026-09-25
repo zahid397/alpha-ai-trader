@@ -18,10 +18,10 @@ describe('generateText', () => {
     assert.equal(await generateText({}, { system: 's' }), null);
   });
 
-  it('uses Workers AI with the system prompt as the only system message', async () => {
+  it('uses Workers AI (when enabled) with the system prompt as the only system message', async () => {
     const AI = fakeAi('hello');
     const result = await generateText(
-      { AI },
+      { AI, WORKERS_AI_ENABLED: 'true' },
       { system: 'server prompt', messages: [{ role: 'user', content: 'hi' }] }
     );
     assert.deepEqual(result, { text: 'hello', source: 'workers-ai', model: '@cf/meta/llama-3.1-8b-instruct' });
@@ -49,22 +49,23 @@ describe('generateText', () => {
     mock.method(globalThis, 'fetch', async () => new Response('rate limited', { status: 429 }));
     mock.method(console, 'warn', () => {});
 
-    const ok = await generateText({ GROQ_API_KEY: 'k', AI: fakeAi('backup') }, { system: 's' });
+    const ok = await generateText({ GROQ_API_KEY: 'k', AI: fakeAi('backup'), WORKERS_AI_ENABLED: 'true' }, { system: 's' });
     assert.equal(ok.source, 'workers-ai');
 
-    const none = await generateText({ GROQ_API_KEY: 'k', AI: fakeAi(new Error('down')) }, { system: 's' });
+    const none = await generateText({ GROQ_API_KEY: 'k', AI: fakeAi(new Error('down')), WORKERS_AI_ENABLED: 'true' }, { system: 's' });
     assert.equal(none, null);
   });
 
-  it('WORKERS_AI_ENABLED=false skips the AI binding', async () => {
+  it('Workers AI is opt-in: the binding alone is never called', async () => {
     const AI = fakeAi('x');
+    assert.equal(await generateText({ AI }, { system: 's' }), null);
     assert.equal(await generateText({ AI, WORKERS_AI_ENABLED: 'false' }, { system: 's' }), null);
     assert.equal(AI.calls.length, 0);
   });
 
-  it('USE_MOCK_AI=true forces the rule-based coach', async () => {
+  it('USE_MOCK_AI=true forces the engine-only mode', async () => {
     const AI = fakeAi('x');
-    assert.equal(await generateText({ AI, USE_MOCK_AI: 'true' }, { system: 's' }), null);
+    assert.equal(await generateText({ AI, USE_MOCK_AI: 'true', WORKERS_AI_ENABLED: 'true', GROQ_API_KEY: 'k' }, { system: 's' }), null);
     assert.equal(AI.calls.length, 0);
   });
 });

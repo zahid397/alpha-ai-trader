@@ -1,4 +1,4 @@
-import { round2 } from '../lib/http.js';
+import { round2 } from './math.js';
 
 const TYPE_ALIASES = { buy: 'buy', long: 'buy', sell: 'sell', short: 'sell' };
 const SYMBOL_PATTERN = /^[A-Z0-9._:/-]{1,20}$/;
@@ -19,6 +19,28 @@ export function notional(trade) {
   return Math.abs((trade.entryPrice || 0) * (trade.positionSize || 0));
 }
 
+// Dollars at risk if the planned stop is hit, or null without a stop.
+export function plannedRisk(trade) {
+  if (!Number.isFinite(trade.stopLoss)) return null;
+  const risk = Math.abs(trade.entryPrice - trade.stopLoss) * trade.positionSize;
+  return risk > 0 ? risk : null;
+}
+
+// Profit expressed in units of planned risk (Van Tharp's R-multiple).
+export function rMultiple(trade) {
+  const risk = plannedRisk(trade);
+  return risk ? trade.profit / risk : null;
+}
+
+// Position "size" for comparing trades across symbols: planned risk when both
+// trades have stops (risk-normalised), otherwise notional value.
+export function sizeRatio(reference, trade) {
+  const a = plannedRisk(reference);
+  const b = plannedRisk(trade);
+  if (a && b) return b / a;
+  return notional(trade) / (notional(reference) || 1);
+}
+
 // True when a losing trade was closed beyond its planned stop loss,
 // i.e. the trader let the loser run past the exit they had planned.
 export function exceededStopLoss(trade) {
@@ -28,7 +50,7 @@ export function exceededStopLoss(trade) {
 
 function parsePositiveNumber(value) {
   if (value === null || value === undefined || value === '') return undefined;
-  const num = typeof value === 'number' ? value : Number(value);
+  const num = typeof value === 'number' ? value : Number(String(value).replace(/,/g, ''));
   return Number.isFinite(num) && num > 0 ? num : NaN;
 }
 
@@ -79,7 +101,7 @@ export function buildTrade(input, { existing = null, id, now = new Date() } = {}
   }
 
   if (source.duration !== undefined || !existing) {
-    const duration = source.duration === undefined || source.duration === '' ? 0 : Number(source.duration);
+    const duration = source.duration === undefined || source.duration === '' || source.duration === null ? 0 : Number(source.duration);
     if (!Number.isInteger(duration) || duration < 0) errors.push('duration must be a whole number of minutes >= 0');
     merged.duration = duration;
   }
@@ -105,7 +127,7 @@ export function buildTrade(input, { existing = null, id, now = new Date() } = {}
   return { trade: toTrade(merged) };
 }
 
-// Fixed key order so both storage backends return identical shapes.
+// Fixed key order so every storage backend returns identical shapes.
 export function toTrade(t) {
   return {
     id: t.id,
@@ -124,7 +146,7 @@ export function toTrade(t) {
   };
 }
 
-// Seed data is trusted but still normalised (ISO timestamps, recomputed
+// Seed/import data is trusted but still normalised (ISO timestamps, recomputed
 // status) so string comparisons on `timestamp` behave consistently.
 export function normalizeSeedTrade(t) {
   return toTrade({
@@ -135,5 +157,9 @@ export function normalizeSeedTrade(t) {
 }
 
 export function newTradeId() {
-  return `trade_${crypto.randomUUID()}`;
+  const random =
+    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+  return `trade_${random}`;
 }
