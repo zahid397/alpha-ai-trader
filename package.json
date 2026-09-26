@@ -12,7 +12,8 @@
     "test": "node --test \"test/**/*.test.js\"",
     "check": "wrangler deploy --dry-run --outdir .wrangler/dry-run",
     "game:build": "node scripts/build-game.mjs",
-    "game:test": "dotnet test game/CrimsonArena.slnx"
+    "game:test": "dotnet test game/CrimsonArena.slnx",
+    "mobile:assets": "node scripts/sync-mobile-assets.mjs"
   },
   "engines": {
     "node": ">=22"

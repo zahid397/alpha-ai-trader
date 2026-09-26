@@ -75,7 +75,7 @@ public sealed class Player : Fighter
 public sealed class Enemy : Fighter
 {
     public EnemyKind Kind;
-    public bool IsBoss => Kind == EnemyKind.Boss;
+    public bool IsBoss => Kind is EnemyKind.Boss or EnemyKind.Warlord;
     public double Speed;
     public double Poise;
     public double PoiseMax;
@@ -104,6 +104,7 @@ public enum ProjectileKind
 {
     Crescent = 0,
     Dagger = 1,
+    Shockwave = 2,
 }
 
 public sealed class Projectile

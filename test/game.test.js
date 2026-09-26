@@ -26,7 +26,7 @@ before(async () => {
 
 describe('C# engine (WebAssembly build)', () => {
   test('publishes its frame layout and game data', () => {
-    assert.equal(layout.version, 1);
+    assert.equal(layout.version, 2);
     for (const key of ['header', 'player', 'enemy', 'projectile', 'trap', 'pickup', 'event']) assert.ok(layout[key].length > 0, key);
     assert.equal(layout.tuning.arenaWidth, 2400);
     assert.equal(layout.buttons.Attack, 16);
@@ -63,6 +63,19 @@ describe('C# engine (WebAssembly build)', () => {
       return frames;
     };
     assert.deepEqual(run(), run());
+  });
+
+  test('summons the Main Boss on demand (the app unlock) exactly once', () => {
+    const R = layout.summonResults;
+    api.Start(31);
+    assert.equal(api.SummonBoss(), R.Summoned);
+    assert.equal(api.SummonBoss(), R.AlreadyHere);
+    const s = decode(api.Step(1 / 60, 0));
+    const boss = s.enemies.find((e) => e.kind === layout.enemyKinds.Warlord);
+    assert.ok(boss, 'warlord spawned');
+    assert.ok(Math.abs(boss.x - s.player.x) >= 260, 'spawns away from the player');
+    assert.equal(s.bossKind, layout.enemyKinds.Warlord);
+    assert.ok(s.events.some((e) => e.name === 'BossSpawn' && e.value === layout.enemyKinds.Warlord));
   });
 
   test('a bot can fight through waves while every frame stays sane', () => {
@@ -106,6 +119,7 @@ describe('sprite manifest', () => {
     const need = {
       heroine: ['idle', 'walk', 'run', 'jump', 'fall', 'attack1', 'attack2', 'heavy', 'hurt', 'death'],
       knight: ['idle', 'slash', 'overhead', 'lunge'],
+      warlord: ['idle', 'walk', 'heavy', 'death'],
       rogue: ['idle', 'walk', 'run', 'throw', 'recover'],
       trap: ['idle', 'charge', 'rise', 'full', 'retract'],
       fx: ['crescent']

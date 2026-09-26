@@ -1,0 +1,17 @@
+/* Self-hosted so the game makes no network requests (the mobile app runs
+   fully offline). Latin subsets of Cinzel and Inter, both SIL OFL 1.1: see
+   OFL-Cinzel.txt and OFL-Inter.txt. */
+@font-face {
+  font-family: 'Cinzel';
+  font-style: normal;
+  font-weight: 600 900;
+  font-display: swap;
+  src: url('cinzel-latin.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url('inter-latin.woff2') format('woff2');
+}

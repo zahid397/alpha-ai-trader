@@ -9,6 +9,7 @@
 - [Features](#-features)
 - [The Alpha Engine](#-the-alpha-engine-no-api-key)
 - [Crimson Arena (fun mode game)](#-crimson-arena-fun-mode-game)
+- [Mobile app (offline, RevenueCat)](#-mobile-app-offline-revenuecat)
 - [Tested results](#-tested-results)
 - [Deploy (free)](#-deploy-free)
 - [Local development](#-local-development)
@@ -55,9 +56,10 @@ Open **`/game/`** (or the *Crimson Arena* link in the sidebar). It's a side-scro
 | **Enemy AI** (`Ai/Brain.cs`) | A **utility AI**: each enemy scores approach / attack / retreat / strafe / evade / wait-turn from what it perceives. Enemies avoid armed spike traps and never lunge across one. **Attack tokens** stop a crowd from all swinging at once |
 | **AI Director** (`Ai/Director.cs`) | Adjusts difficulty on the fly. It scores each wave (health, damage taken, speed, accuracy) and tunes enemy reaction time, how many may attack at once, wave size and health drops. A struggling player gets mercy, a dominant one gets a ruthless arena |
 | **Waves & world** | Knights, rogues and a boss every 5th wave (enrages at half health and calls for help). Spike traps hurt everyone, and trap kills pay a bonus. Also a combo score multiplier and pickups |
+| **Main Boss** | The Crimson Warlord (its own sprite sheet: idle, walk, a 10-frame greatsword attack, a burning death). It cleaves wide, slams fire shockwaves along the floor that you jump, and enrages at half health. It is summoned on demand: free on the web, unlocked by purchase in the mobile app |
 | **Deterministic** | Seeded RNG: the same seed and inputs replay the exact same game (tested) |
 
-**Controls:** `A`/`D` or arrows move (hold `Shift` to walk), `Space` jumps, `J` attacks, `K` heavy, `L` dash and `U` special. `V` toggles **AI vision**, which shows every enemy's current decision and who holds an attack token. `Esc` pauses and `M` mutes. Gamepads work, and phones get on-screen touch controls.
+**Controls:** `A`/`D` or arrows move (hold `Shift` to walk), `Space` jumps, `J` attacks, `K` heavy, `L` dash and `U` special. `B` summons (or unlocks) the Main Boss, `V` toggles **AI vision**, which shows every enemy's current decision and who holds an attack token. `Esc` pauses and `M` mutes. Gamepads work, and phones get on-screen touch controls.
 
 **Juice:** parallax gothic backdrop, sprite animation matched to the attack frame data, particles, screen shake, damage numbers and hit flashes. It also has telegraph glows so attacks can be read, synthesized WebAudio sound effects, an adaptive music loop, and a high score saved locally. If a device renders slowly, the resolution drops automatically.
 
@@ -70,13 +72,35 @@ npm run game:build    # dotnet publish -> public/game/engine/_framework
 
 Sprites are cut from the source sheets in `game/art/source/` by `game/art/extract.py` (background removal, frame slicing, foot anchoring, WebP atlases).
 
+## 📱 Mobile app (offline, RevenueCat)
+
+`mobile/` is a Flutter app that bundles the whole game: HTML, JS, sprites, fonts and the C# WebAssembly engine. It plays it **fully offline** in a WebView, with no Vercel and no server. The **Main Boss**, the Crimson Warlord, is unlocked through a **RevenueCat** paywall:
+
+1. The game sends `unlockBoss` through a `JavaScriptChannel`.
+2. Flutter shows the paywall.
+3. On success it calls back into the page, and the C# engine spawns the boss.
+
+```bash
+cd mobile && flutter pub get && flutter run      # demo store, no accounts needed
+flutter run --dart-define=RC_GOOGLE_API_KEY=goog_... --dart-define=RC_APPLE_API_KEY=appl_...
+```
+
+After changing the game, run `npm run mobile:assets` to copy it into the app. See [`mobile/README.md`](mobile/README.md) for the full setup:
+
+- store products and RevenueCat entitlement/offering/paywall
+- why `file://` can't run .NET WebAssembly, and the loopback asset server that replaces it
+- the bridge protocol, and troubleshooting
+
+On the web, the Main Boss is a free summon (web demo).
+
 ## 📊 Tested results
 
-- **89 automated tests** (`npm test`): engine math, bias detection, NLU accuracy on 17 phrasings including typos, Monte Carlo determinism, CSV parsing, every API route, the Vercel entry point and prompt-injection protection.
+- **92 automated tests** (`npm test`): engine math, bias detection, NLU accuracy on 17 phrasings including typos, Monte Carlo determinism, CSV parsing, every API route, the Vercel entry point and prompt-injection protection.
 - **Big data:** the test suite analyses **5,000 trades** with no NaN anywhere. In the browser, the "Big data: 2,000 trades" demo is analysed in about 30 ms.
 - **Fast on the free tier:** on the server, a coach answer on the 160-trade demo takes about 3 ms of CPU (under 1 ms when cached) and about 7 ms at 1,000 trades, inside Cloudflare's free CPU budget. Dashboards are computed in the browser.
 - **Verified end to end** in Chromium: Cloudflare (`wrangler dev` + D1), the Node server (no database, so local mode), and static-only hosting (offline mode), in light and dark themes and at mobile width, with no console errors.
-- **Game engine:** 38 C# tests covering physics, combat, AI, traps, waves, the Director, determinism and the snapshot format, plus a soak test. In it, a bot plays **120 full runs (676k frames)** with every frame checked against the engine's invariants. The engine runs about **5,000× faster than real time** in .NET and about 400× in the browser's WebAssembly. `npm test` also boots the real WebAssembly build under Node and plays it.
+- **Game engine:** 47 C# tests covering physics, combat, AI, traps, waves, the Director, the Main Boss, determinism and the snapshot format, plus a soak test. In it, a bot plays **120 full runs (676k frames)** with every frame checked against the engine's invariants. The engine runs about **5,000× faster than real time** in .NET and about 400× in the browser's WebAssembly. `npm test` also boots the real WebAssembly build under Node and plays it.
+- **Mobile app:** `flutter analyze` is clean and 36 Flutter tests pass. They cover the loopback asset server (MIME types, traversal, port fallback, restart), the purchase/bridge flow with a fake store, the bundled game being complete and identical to `public/game`, the JS↔Dart message contract and the demo paywall. The game was also booted from the app's own Dart server in a phone-sized Chromium with all network access blocked. It loaded in 0.6 s, and the unlock → spawn flow ran end to end. CI builds the Android APK (and iOS on `main`).
 - **Game in the browser:** played end to end by an automated keyboard bot (wave 4 reached), with touch controls tested on phone viewports in both orientations. The engine loads in under a second.
 
 ## 🚀 Deploy (free)
@@ -119,7 +143,7 @@ npm install
 npm run dev           # Cloudflare runtime + local D1 at http://localhost:8787
 # or
 npm start             # plain Node server at http://localhost:3000
-npm test              # 89 tests (includes the game's WebAssembly engine)
+npm test              # 92 tests (includes the game's WebAssembly engine)
 npm run check         # bundle the Worker exactly as `wrangler deploy` would
 ```
 
@@ -166,6 +190,7 @@ Everything is optional. On Cloudflare, set these in `wrangler.jsonc` → `vars` 
 │   ├── js/                 # app controller, SVG charts, data layer, icons
 │   ├── engine/             # Alpha Engine, shared by browser and server
 │   └── game/               # Crimson Arena: canvas client, sprites, compiled C# engine
+├── mobile/                 # Flutter app: bundled offline game + RevenueCat unlock
 ├── game/                   # C# game engine source
 │   ├── Engine/             # simulation: physics, combat, AI brain + director
 │   ├── Engine.Tests/       # xUnit tests + bot soak test
@@ -175,6 +200,7 @@ Everything is optional. On Cloudflare, set these in `wrangler.jsonc` → `vars` 
 ├── api/index.js            # Vercel function entry
 ├── scripts/serve.mjs       # plain Node server (npm start)
 ├── scripts/build-game.mjs  # compiles the C# engine to WebAssembly
+├── scripts/sync-mobile-assets.mjs  # copies the game into the Flutter app
 ├── vercel.json             # Vercel config
 ├── wrangler.jsonc          # Cloudflare config
 └── test/                   # node:test suites

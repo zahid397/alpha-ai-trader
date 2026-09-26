@@ -67,6 +67,23 @@ SHEETS = {
             "row3": ((0, 685, 1024, 965), 7),
         },
     },
+    # The Main Boss. Each band starts just above the frame-number labels;
+    # `label_h` drops small detached pieces (the digits) in that strip.
+    "warlord": {
+        "file": "warlord.jpg",
+        "scale": 0.9,
+        "label_h": 38,
+        "hole_min": 12,  # no white in the design: clear enclosed backdrop pockets
+        "erase": [(0, 390, 416, 416)],
+        "anchor": "body",  # the "ROW 3: HEAVY ATTACK" title touches the band
+        "rows": {
+            "idle": ((0, 26, 1408, 192), 6),
+            "walk": ((0, 219, 1408, 385), 8),
+            "heavy": ((0, 402, 1408, 582), 10),
+            # Titled "12 frames" but only 10 are drawn (labels skip 4 and 10).
+            "death": ((0, 604, 1408, 764), 10),
+        },
+    },
     "fx": {
         "file": "heroine.webp",
         "scale": 1.0,
@@ -102,6 +119,7 @@ ANIMATIONS = {
         "run": [("row3", i) for i in range(7)],
     },
     "trap": {name: [(name, i) for i in range(spec[1])] for name, spec in SHEETS["trap"]["rows"].items()},
+    "warlord": {name: [(name, i) for i in range(spec[1])] for name, spec in SHEETS["warlord"]["rows"].items()},
     "fx": {"crescent": [("crescent", 0), ("crescent", 1)]},
 }
 
@@ -131,7 +149,7 @@ def load_rgba(path, hole_min=600):
     return a
 
 
-def find_frames(rgba, band, expect, name, cuts=None):
+def find_frames(rgba, band, expect, name, cuts=None, label_h=0):
     """Split a row band into `expect` frames.
 
     Cut columns are the emptiest columns near evenly spaced positions (or
@@ -164,6 +182,8 @@ def find_frames(rgba, band, expect, name, cuts=None):
         ys, xs = np.nonzero(piece)
         if len(xs) < 8:
             continue
+        if label_h and sl[0].stop <= label_h and len(xs) < 600:
+            continue  # a frame-number label, not part of the sprite
         xs_abs = xs + sl[1].start
         seg = np.searchsorted(cuts, xs_abs, side="right")
         counts = np.bincount(seg, minlength=expect)
@@ -182,7 +202,7 @@ def find_frames(rgba, band, expect, name, cuts=None):
     return frames, [c + x0 for c in cuts]
 
 
-def crop_frame(rgba, box, mask, scale):
+def crop_frame(rgba, box, mask, scale, anchor="feet"):
     x0, y0, x1, y1 = box
     crop = rgba[y0:y1, x0:x1].astype(np.uint8).copy()
     crop[:, :, 3] = np.where(mask, crop[:, :, 3], 0)
@@ -195,6 +215,10 @@ def crop_frame(rgba, box, mask, scale):
     cols = np.where(lower.any(axis=0))[0]
     weights = lower.sum(axis=0)[cols]
     ax = float((cols * weights).sum() / weights.sum()) if weights.sum() else crop.shape[1] / 2
+    if anchor == "body":
+        # Big weapons reach down to the feet; the torso is the densest column.
+        density = np.convolve(solid.sum(axis=0), np.ones(31) / 31, mode="same")
+        ax = float(np.argmax(density))
     if scale != 1:
         w = max(1, round(img.width * scale))
         h = max(1, round(img.height * scale))
@@ -254,14 +278,16 @@ def main():
 
     for sheet_name, spec in SHEETS.items():
         rgba = load_rgba(SRC / spec["file"], spec.get("hole_min", 600))
+        for ex0, ey0, ex1, ey1 in spec.get("erase", []):
+            rgba[ey0:ey1, ex0:ex1, 3] = 0
         frames_by_row = {}
         preview = Image.fromarray(rgba.astype(np.uint8), "RGBA") if debug else None
         draw = ImageDraw.Draw(preview) if debug else None
         for row, row_spec in spec["rows"].items():
             band, expect = row_spec[0], row_spec[1]
             cuts = row_spec[2] if len(row_spec) > 2 else None
-            found, used_cuts = find_frames(rgba, band, expect, f"{sheet_name}.{row}", cuts)
-            frames_by_row[row] = [crop_frame(rgba, box, mask, spec["scale"]) for box, mask in found]
+            found, used_cuts = find_frames(rgba, band, expect, f"{sheet_name}.{row}", cuts, spec.get("label_h", 0))
+            frames_by_row[row] = [crop_frame(rgba, box, mask, spec["scale"], spec.get("anchor", "feet")) for box, mask in found]
             if debug:
                 draw.rectangle(band, outline=(0, 128, 255, 255))
                 for c in used_cuts:

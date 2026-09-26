@@ -27,6 +27,7 @@ public static class Brain
             {
                 EnemyKind.Rogue => 0.24,
                 EnemyKind.Boss => 0.18,
+                EnemyKind.Warlord => 0.2,
                 _ => 0.3,
             };
             e.ThinkTimer = reaction / w.Director.EffectiveAggression(w.Player) * w.Rng.Range(0.8, 1.25);
@@ -65,7 +66,17 @@ public static class Brain
             }
         }
 
-        if (e.Kind == EnemyKind.Rogue)
+        if (e.Kind == EnemyKind.Warlord)
+        {
+            // The Main Boss: advances relentlessly, cleaves up close and
+            // slams shockwaves at anyone keeping their distance.
+            var reach = Attacks.WarlordCleave.Reach + p.HalfWidth;
+            if (dist > reach * 0.8) Consider(Intent.Approach, 0.55 + Math.Min(0.35, (dist - reach) / 500));
+            if (dist <= reach && e.SlashCooldown <= 0) Consider(Intent.Attack, 0.95 * aggression, AttackKind.WarlordCleave);
+            if (dist is > 180 and < 520 && e.HeavyCooldown <= 0) Consider(Intent.Attack, 0.88 * aggression, AttackKind.WarlordSlam);
+            if (dist <= reach && e.HeavyCooldown <= 0 && w.Rng.Chance(0.3)) Consider(Intent.Attack, 0.97 * aggression, AttackKind.WarlordSlam);
+        }
+        else if (e.Kind == EnemyKind.Rogue)
         {
             const double min = 210;
             const double max = 360;
@@ -152,6 +163,7 @@ public static class Brain
                 {
                     AttackKind.RogueThrow => dist <= 480,
                     AttackKind.KnightLunge => dist <= 260,
+                    AttackKind.WarlordSlam => dist <= 540,
                     _ => dist <= def.Reach * e.Scale + p.HalfWidth + 6,
                 };
                 if (inRange && e.Grounded)
