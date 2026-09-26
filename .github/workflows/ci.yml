@@ -34,6 +34,49 @@ jobs:
           dotnet-version: 10.0.x
       - run: dotnet test game/CrimsonArena.slnx --logger "console;verbosity=normal"
 
+  # The Flutter app (mobile/): analyzer, unit + widget tests, and a real
+  # Android build. The debug APK is uploaded so it can be installed on a phone.
+  mobile:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+      - run: flutter build apk --debug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crimson-arena-debug-apk
+          path: mobile/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+
+  # iOS compile check (macOS runners cost more: main and manual runs only).
+  mobile-ios:
+    if: github.event_name != 'pull_request'
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter build ios --debug --no-codesign
+
   # Deploys main to Cloudflare Workers. Needs two repository secrets:
   # CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID (see README). Without them
   # this job only prints a notice, so CI stays green.

@@ -14,12 +14,13 @@ namespace CrimsonArena;
 /// </summary>
 public sealed class Snapshot
 {
-    public const int Version = 1;
+    public const int Version = 2;
 
     public static readonly string[] Header =
     [
         "version", "state", "time", "wave", "score", "combo", "multiplier", "kills", "bestCombo",
         "stateTimer", "timeScale", "hitstop", "aggression", "enemiesLeft", "bossHp", "tokens", "comboTimer",
+        "bossKind", "warlordQueued",
     ];
 
     public static readonly string[] PlayerFields =
@@ -52,7 +53,8 @@ public sealed class Snapshot
     {
         _length = 0;
         var p = w.Player;
-        var boss = w.Enemies.FirstOrDefault(e => e.IsBoss && e.IsAlive);
+        // The Main Boss takes the boss bar when both are alive.
+        var boss = w.Enemies.Where(e => e.IsBoss && e.IsAlive).OrderByDescending(e => e.Kind == EnemyKind.Warlord).FirstOrDefault();
 
         Push(Version);
         Push((int)w.State);
@@ -71,6 +73,8 @@ public sealed class Snapshot
         Push(boss?.HpRatio ?? -1);
         Push(w.TokensInUse);
         Push(w.ComboTimer);
+        Push(boss is null ? -1 : (int)boss.Kind);
+        Push(w.WarlordQueued ? 1 : 0);
 
         var (phase, phaseT) = AttackPhase(p, p.StateTime);
         Push(p.X);
@@ -231,6 +235,8 @@ public sealed class Snapshot
         EnumMap(sb, "intents", Enum.GetValues<Intent>());
         EnumMap(sb, "events", Enum.GetValues<EventType>());
         EnumMap(sb, "trapPhases", Enum.GetValues<TrapPhase>());
+        EnumMap(sb, "projectileKinds", Enum.GetValues<ProjectileKind>());
+        EnumMap(sb, "summonResults", Enum.GetValues<SummonResult>());
         EnumMap(sb, "attackKinds", Enum.GetValues<AttackKind>());
         EnumMap(sb, "buttons", Enum.GetValues<Buttons>(), last: true);
         sb.Append('}');

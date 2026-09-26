@@ -30,6 +30,8 @@ public class SoakTests(ITestOutputHelper output)
             var snap = new Snapshot();
             for (var f = 0; f < RunSeconds * 60 && w.State != GameState.GameOver; f++)
             {
+                // Every fourth run summons the Main Boss 20 seconds in (the app's unlock).
+                if (seed % 4 == 0 && f == 20 * 60) w.SummonWarlord();
                 w.Step(Sim.Frame, bot.Decide(w));
                 foreach (var e in w.Events) events[e.Type] = events.GetValueOrDefault(e.Type) + 1;
                 CheckInvariants(w);

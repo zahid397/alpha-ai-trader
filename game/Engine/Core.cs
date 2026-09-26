@@ -113,6 +113,18 @@ public enum EnemyKind
     Knight = 0,
     Rogue = 1,
     Boss = 2,
+    /// <summary>The Main Boss: summoned on demand (unlocked in the mobile app).</summary>
+    Warlord = 3,
+}
+
+/// <summary>Result of asking for the Main Boss.</summary>
+public enum SummonResult
+{
+    NotPlaying = 0,
+    Summoned = 1,
+    /// <summary>Asked between waves: it opens the next wave.</summary>
+    Queued = 2,
+    AlreadyHere = 3,
 }
 
 /// <summary>What an enemy's brain decided to do (exposed for the debug overlay).</summary>
@@ -149,6 +161,7 @@ public enum EventType
     Stagger = 17,
     Spawn = 18,
     TrapKill = 19,
+    Slam = 20,
 }
 
 public readonly record struct GameEvent(EventType Type, double X, double Y, double Value, double Aux);

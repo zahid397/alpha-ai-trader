@@ -35,6 +35,13 @@ public static partial class GameExports
         return Snapshot.Write(World);
     }
 
+    /// <summary>
+    /// Bring in the Main Boss (after the app's "Unlock Main Boss" purchase).
+    /// Returns a SummonResult: 0 not playing, 1 summoned, 2 queued for next wave, 3 already here.
+    /// </summary>
+    [JSExport]
+    public static int SummonBoss() => (int)World.SummonWarlord();
+
     /// <summary>How the AI Director currently reads the player: calm, balanced or ruthless.</summary>
     [JSExport]
     public static string Mood() => World.Director.Mood;

@@ -11,6 +11,8 @@ public enum AttackKind
     KnightOverhead = 6,
     KnightLunge = 7,
     RogueThrow = 8,
+    WarlordCleave = 9,
+    WarlordSlam = 10,
 }
 
 /// <summary>
@@ -51,6 +53,10 @@ public static class Attacks
     public static readonly AttackDef KnightLunge = new(AttackKind.KnightLunge, 0.36, 0.22, 0.52, 76, 80, 15, 300, 120, 0.08, 0, Lunge: 540);
     public static readonly AttackDef RogueThrow = new(AttackKind.RogueThrow, 0.38, 0.05, 0.4, 0, 0, 9, 160, 60, 0.04, 0, SpawnsProjectile: true);
 
+    // Main Boss: a huge greatsword sweep, and a slam that sends a shockwave along the floor (jump it).
+    public static readonly AttackDef WarlordCleave = new(AttackKind.WarlordCleave, 0.62, 0.2, 0.55, 150, 150, 24, 460, 280, 0.12, 0);
+    public static readonly AttackDef WarlordSlam = new(AttackKind.WarlordSlam, 0.78, 0.12, 0.7, 96, 120, 18, 300, 380, 0.1, 0, SpawnsProjectile: true);
+
     public static AttackDef Get(AttackKind kind) => kind switch
     {
         AttackKind.Light1 => Light1,
@@ -61,6 +67,8 @@ public static class Attacks
         AttackKind.KnightOverhead => KnightOverhead,
         AttackKind.KnightLunge => KnightLunge,
         AttackKind.RogueThrow => RogueThrow,
+        AttackKind.WarlordCleave => WarlordCleave,
+        AttackKind.WarlordSlam => WarlordSlam,
         _ => throw new ArgumentOutOfRangeException(nameof(kind)),
     };
 }

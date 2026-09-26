@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Same as the game's backdrop, so launch has no white flash. -->
+    <color name="arena_background">#07050B</color>
+</resources>

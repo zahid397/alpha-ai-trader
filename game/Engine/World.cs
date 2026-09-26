@@ -51,6 +51,7 @@ public sealed class World
     private bool _waveDamageTaken;
     private int _nextId = 1;
     private bool _sandbox;
+    private bool _warlordQueued;
 
     public World(ulong seed = 1)
     {
@@ -86,6 +87,7 @@ public sealed class World
         _slowmoTimer = 0;
         _held = _pressed = Buttons.None;
         _sandbox = false;
+        _warlordQueued = false;
         _nextId = 1;
         BeginWave(1);
     }
@@ -171,7 +173,7 @@ public sealed class World
             if (ComboTimer <= 0) Combo = 0;
         }
 
-        Enemies.RemoveAll(e => e.State == FighterState.Dead && e.DeathTimer > 1.6);
+        Enemies.RemoveAll(e => e.State == FighterState.Dead && e.DeathTimer > DeathLinger(e));
 
         if (!_sandbox && State == GameState.Playing && _pending.Count == 0 && !Enemies.Any(e => e.IsAlive) && Player.IsAlive)
         {
@@ -199,6 +201,11 @@ public sealed class World
         State = GameState.Playing;
         _pending.Clear();
         _pending.AddRange(Director.ComposeWave(wave, Rng));
+        if (_warlordQueued)
+        {
+            _warlordQueued = false;
+            _pending.Insert(0, new SpawnOrder(EnemyKind.Warlord, 0.4, Player.X < Tuning.ArenaWidth / 2 ? 1 : 0));
+        }
         WaveEnemyCount = _pending.Count;
         _spawnClock = 0;
         _waveDamageTaken = false;
@@ -257,6 +264,14 @@ public sealed class World
                 e.Height = 82;
                 e.ScoreValue = 80;
                 break;
+            case EnemyKind.Warlord:
+                e.MaxHp = 900 * (1 + 0.1 * (Wave - 1));
+                e.Speed = 100;
+                e.PoiseMax = 240;
+                e.HalfWidth = 36;
+                e.Height = 150;
+                e.ScoreValue = 5000;
+                break;
             default:
                 e.MaxHp = 520 * (1 + 0.15 * (Wave / 5 - 1));
                 e.Speed = 115;
@@ -271,12 +286,35 @@ public sealed class World
         }
         e.Hp = e.MaxHp;
         e.Poise = e.PoiseMax;
-        e.SetState(FighterState.Spawn, 0.75);
+        e.SetState(FighterState.Spawn, order.Kind == EnemyKind.Warlord ? 1.6 : 0.75);
         e.ThinkTimer = Rng.Range(0.2, 0.5);
         Enemies.Add(e);
         Emit(e.IsBoss ? EventType.BossSpawn : EventType.Spawn, e.X, 0, (int)e.Kind, e.Id);
         return e;
     }
+
+    /// <summary>
+    /// Bring in the Main Boss now (the mobile app calls this after the
+    /// "Unlock Main Boss" purchase). Between waves it opens the next wave.
+    /// </summary>
+    public SummonResult SummonWarlord()
+    {
+        if (State is GameState.Title or GameState.GameOver || !Player.IsAlive) return SummonResult.NotPlaying;
+        if (_warlordQueued || Enemies.Any(e => e.Kind == EnemyKind.Warlord && e.IsAlive) || _pending.Any(o => o.Kind == EnemyKind.Warlord))
+            return SummonResult.AlreadyHere;
+        if (State == GameState.WaveBreak)
+        {
+            _warlordQueued = true;
+            return SummonResult.Queued;
+        }
+        Spawn(new SpawnOrder(EnemyKind.Warlord, 0, Player.X < Tuning.ArenaWidth / 2 ? 1 : 0));
+        return SummonResult.Summoned;
+    }
+
+    public bool WarlordQueued => _warlordQueued;
+
+    /// <summary>How long a corpse stays for its death animation.</summary>
+    public static double DeathLinger(Enemy e) => e.Kind == EnemyKind.Warlord ? 2.4 : 1.6;
 
     // ------------------------------------------------------------------
     // Attack tokens (fair crowd combat)
@@ -553,20 +591,41 @@ public sealed class World
         if (def.SpawnsProjectile && !e.HitThisSwing.Contains(-1) && e.StateTime >= def.Windup)
         {
             e.HitThisSwing.Add(-1);
-            Projectiles.Add(new Projectile
+            if (e.Attack == AttackKind.WarlordSlam)
             {
-                Id = _nextId++,
-                Kind = ProjectileKind.Dagger,
-                X = e.X + e.Facing * 26,
-                Y = e.Y + 52 * e.Scale,
-                Vx = e.Facing * 540,
-                Life = 1.5,
-                FromPlayer = false,
-                Damage = def.Damage * e.DamageScale,
-                HalfWidth = 16,
-                HalfHeight = 7,
-            });
-            Emit(EventType.Throw, e.X, e.Y + 52, 0, e.Facing);
+                // A shockwave rolls along the floor: jump it or dash through it.
+                Projectiles.Add(new Projectile
+                {
+                    Id = _nextId++,
+                    Kind = ProjectileKind.Shockwave,
+                    X = e.X + e.Facing * 70,
+                    Y = 20,
+                    Vx = e.Facing * 470,
+                    Life = 1.8,
+                    FromPlayer = false,
+                    Damage = 16 * e.DamageScale,
+                    HalfWidth = 26,
+                    HalfHeight = 20,
+                });
+                Emit(EventType.Slam, e.X + e.Facing * 70, 0, 0, e.Facing);
+            }
+            else
+            {
+                Projectiles.Add(new Projectile
+                {
+                    Id = _nextId++,
+                    Kind = ProjectileKind.Dagger,
+                    X = e.X + e.Facing * 26,
+                    Y = e.Y + 52 * e.Scale,
+                    Vx = e.Facing * 540,
+                    Life = 1.5,
+                    FromPlayer = false,
+                    Damage = def.Damage * e.DamageScale,
+                    HalfWidth = 16,
+                    HalfHeight = 7,
+                });
+                Emit(EventType.Throw, e.X, e.Y + 52, 0, e.Facing);
+            }
         }
 
         if (e.StateTime >= def.Duration)
@@ -593,6 +652,12 @@ public sealed class World
                     break;
                 case AttackKind.RogueThrow:
                     e.ThrowCooldown = 1.7 / Director.Aggression;
+                    break;
+                case AttackKind.WarlordCleave:
+                    e.SlashCooldown = 1.4 / Director.Aggression;
+                    break;
+                case AttackKind.WarlordSlam:
+                    e.HeavyCooldown = 3.2 / Director.Aggression;
                     break;
             }
             if (!e.IsBoss) ReleaseToken(e);
@@ -678,7 +743,7 @@ public sealed class World
             e.Enraged = true;
             e.Speed *= 1.25;
             Emit(EventType.BossSpawn, e.X, 0, (int)e.Kind, -1);
-            Spawn(new SpawnOrder(EnemyKind.Rogue, 0, e.X < Tuning.ArenaWidth / 2 ? 1 : 0));
+            Spawn(new SpawnOrder(e.Kind == EnemyKind.Warlord ? EnemyKind.Knight : EnemyKind.Rogue, 0, e.X < Tuning.ArenaWidth / 2 ? 1 : 0));
         }
 
         if (e.Hp <= 0)
@@ -729,7 +794,12 @@ public sealed class World
             _slowmoTimer = 1.2;
         }
 
-        if (Rng.Chance(Director.HealthDropChance(Player))) DropPickup(PickupKind.Health, e.X);
+        if (e.Kind == EnemyKind.Warlord)
+        {
+            DropPickup(PickupKind.Health, e.X - 30);
+            DropPickup(PickupKind.Rage, e.X + 30);
+        }
+        else if (Rng.Chance(Director.HealthDropChance(Player))) DropPickup(PickupKind.Health, e.X);
         else if (Rng.Chance(0.3)) DropPickup(PickupKind.Rage, e.X);
     }
 
